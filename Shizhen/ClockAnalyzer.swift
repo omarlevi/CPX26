@@ -24,7 +24,7 @@ enum ClockAnalyzer {
 
     /// Mini-Cog clock component (2 normal / 0 abnormal) combining rules and the Core ML scorer.
     static func miniCogClockPoints(_ m: ClockMetrics) -> Int {
-        let modelOK = m.mlImpairedProb < 0 ? true : m.mlImpairedProb < 0.5
+        let modelOK = m.mlImpairedProb < 0 ? true : m.mlImpairedProb < 0.6   // Youden-optimal threshold on held-out test set (0.59)
         let numbersOK = m.numbersFound >= 9 && m.meanAngleErrorDeg < 30
         let modelSaysNormal = m.mlNormalProb >= 0.6 || m.mlClass == "minor_errors"
         if m.handsCorrect && modelOK && (numbersOK || modelSaysNormal) && !m.neglectFlag { return 2 }

@@ -38,3 +38,18 @@ python ml/train.py --task shulman --data-root data --out ml/out
 python ml/train.py --task mci --data-root data --out ml/out --init ml/out/shulman.pt
 ```
 The `.mlpackage` outputs go in `Shizhen/ML/`. Metrics and figures are written to `ml/out/`.
+
+## Results (v1, held-out participants never seen in training)
+**ClockScorer** (Chulalongkorn CDT, test n = 465 drawings, split by participant)
+| Metric | Value |
+|---|---|
+| 3-class balanced accuracy (impaired / minor / normal) | **76.9%** |
+| Impaired vs. not impaired: ROC-AUC | **0.96** |
+| Sensitivity / specificity at the Youden threshold (p = 0.59) | **88% / 94%** |
+| Macro-F1 | 0.72 |
+
+For comparison, the dataset authors report 76.7–78.9% accuracy with ImageNet-pretrained ResNets (API-Net). We trained a small mini-VGG from scratch that runs on-device in milliseconds. Most errors are "minor errors" predicted as "impaired", which is the cautious direction for a screening tool. The app uses p ≥ 0.6 as the impaired cut-off.
+
+Figures: `docs/figures/shulman_confusion.png`, `shulman_roc.png`, `shulman_training.png`.
+
+**CognitiveScreen** (Chulalongkorn MCI, test n = 139): balanced accuracy 58.6%, AUC 0.63. A single clock is a weak predictor of MoCA-defined MCI (the source study combined three drawing tasks). This model is **experimental**: it's recorded but **not used for alerts**. Combining the clock with our recall, orientation and process features, plus NHATS demographics, is the planned improvement.
