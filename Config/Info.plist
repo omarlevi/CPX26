@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_shizhen-sync._tcp</string>
+		<string>_shizhen-sync._udp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Shizhen links the check-taker's device with a family member's device nearby to share results privately.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Shizhen listens when you say the three words aloud. Audio is processed on this device.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Shizhen recognises the three words you say. Recognition runs on this device when supported.</string>
+</dict>
+</plist>

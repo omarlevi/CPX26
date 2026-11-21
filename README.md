@@ -38,7 +38,8 @@ Built for **CrossPointX 2026, Track 1: Apple Human-Centered Care**.
 - All inference runs **on the device**. No Apple Intelligence or Foundation Models are needed, so it works on mainland-China devices.
 
 ### Data, instruments and references
-- **NHATS** (National Health and Aging Trends Study) clock drawings and scores, if access is granted. See `docs/SPEC.md` for how they're used. NHATS is sponsored by the U.S. National Institute on Aging.
+- **Chulalongkorn CDT dataset** (3,108 clinician-scored clocks, Shulman 0–5) and **Chulalongkorn MCI drawing dataset** (918 tablet-drawn clocks + MoCA scores), used to train our two Core ML models. Public research releases by the cccnlab group, credited and not redistributed here.
+- The method follows the **NHATS**-based work of Sato et al. (2022). NHATS data (U.S. National Institute on Aging) is the next training set: the application was submitted on Nov 21, 2026, and the pipeline is ready for it. See [`docs/DATA.md`](docs/DATA.md).
 - **Mini-Cog** (© S. Borson) inspires the word-recall + clock scoring. This hackathon prototype is non-commercial; commercial use requires a license.
 - **4AT** delirium screening concepts (acute change, attention) inform the "sudden change" alert.
 - Clinical/ML references are listed in `docs/SPEC.md`.

@@ -90,11 +90,11 @@ Health data is *sensitive personal information* under China's PIPL. It needs sep
 Business line: "consented, de-identified longitudinal drawing data for research partners (hospitals, pharma trials, universities)." Consented data also trains the next model version.
 
 ## 6. Machine learning
-### 6.1 ClockScorer (Core ML image model): P0 if data arrives, else the fallback
-- **Data**: NHATS clock drawing images with interviewer scores 0–5 (rounds 1–9+, 40k+ images). Fallback if NHATS access is delayed: a public Roboflow "clock drawing" set + about 200 venue-collected finger drawings (normal + deliberately reproduced error types).
-- **Labels**: 3 classes, **0–2 impaired / 3 borderline / 4–5 normal**, which is more robust than 6 classes for a 1-day training run. Also report 6-class accuracy if time allows.
-- **Training**: Create ML Image Classifier on the Mac Studio (transfer learning, built-in augmentation: rotate, flip, noise). Split 70/15/15 **by participant** (so the same person never appears in both train and test). Optional: PyTorch/ViT on the RTX 4090, then coremltools.
-- **Benchmarks we report**: balanced accuracy, confusion matrix, ROC-AUC on the held-out set; compared with Sato et al. 2022 (mini-VGG, 90.1% / 77.2% balanced accuracy for their tasks).
+### 6.1 ClockScorer + CognitiveScreen (Core ML image models): P0, trained
+- **v1 data**: Chulalongkorn CDT (3,108 clinician-scored clocks, Shulman 0–5) and Chulalongkorn MCI (918 tablet-drawn clocks + MoCA). See `docs/DATA.md`. NHATS is next (application submitted; same pipeline).
+- **ClockScorer**: 3 classes, **0–3 impaired / 4 minor errors / 5 normal**. **CognitiveScreen**: binary, MoCA ≤ 24, fine-tuned from ClockScorer.
+- **Training**: `ml/train.py`. Mini-VGG (Sato et al. 2022 family), trained from scratch, class-weighted, augmented with rotation/scale/shift/stroke-thickness (no mirror flips). Split 70/15/15 **by participant**. Exported with coremltools (mlprogram, iOS 17, grayscale 128×128 input).
+- **Reported**: balanced accuracy, macro-F1, AUC, sensitivity/specificity at the Youden threshold, confusion matrix, ROC, training curve (`ml/out/`).
 
 ### 6.2 RiskModel (Core ML tabular): P1
 - **Inputs**: clock score, recall, orientation, age, sex, education.
