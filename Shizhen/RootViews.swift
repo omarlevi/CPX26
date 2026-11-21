@@ -120,8 +120,8 @@ struct TakerHome: View {
             Button(T("切换身份", "Switch role")) { showSwitch = true }.font(.footnote).foregroundStyle(.tertiary)
         }
         .padding(28)
-        .fullScreenCover(isPresented: $running) { SessionFlow() }
-        .sheet(isPresented: $showPair) { pairSheet }
+        .fullScreenCover(isPresented: $running) { SessionFlow().environmentObject(store).environmentObject(link) }
+        .sheet(isPresented: $showPair) { pairSheet.environmentObject(store).environmentObject(link) }
         .confirmationDialog(T("切换身份？", "Switch role?"), isPresented: $showSwitch) {
             Button(T("切换为家属", "Switch to carer")) { store.data.role = .carer }
             Button(T("重新选择", "Choose again")) { store.data.role = nil }

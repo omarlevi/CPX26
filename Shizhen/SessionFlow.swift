@@ -230,7 +230,7 @@ struct SessionFlow: View {
     private var doneStep: some View {
         VStack(spacing: 24) {
             Image(systemName: result.status == .urgent || result.status == .doctor ? "heart.text.square.fill" : "checkmark.seal.fill")
-                .font(.system(size: 90)).foregroundStyle(result.status == .urgent ? .red : .green)
+                .font(.system(size: 90)).foregroundStyle(result.status == .urgent ? Color.red : Color.green)
             BigTitle(T("谢谢您！", "Thank you!"), T("您的家人已收到结果", "Your family has been updated"))
             if result.status == .urgent || result.status == .doctor {
                 Text(RiskEngine.message(for: result.status)).font(.title3).multilineTextAlignment(.center)

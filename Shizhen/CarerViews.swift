@@ -36,8 +36,8 @@ struct CarerDashboard: View {
                         .accessibilityLabel(T("设置", "Settings"))
                 }
             }
-            .sheet(isPresented: $showDemo) { DemoControls() }
-            .sheet(isPresented: $showSettings) { CarerSettings() }
+            .sheet(isPresented: $showDemo) { DemoControls().environmentObject(store).environmentObject(link) }
+            .sheet(isPresented: $showSettings) { CarerSettings().environmentObject(store).environmentObject(link) }
             .navigationDestination(for: SessionResult.self) { SessionDetail(session: $0) }
         }
         .onAppear { link.startHosting(code: store.data.pairingCode) }
