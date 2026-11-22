@@ -79,6 +79,7 @@ struct DemoControls: View {
                     Button(T("载入 3 个月：稳定", "Load 3 months: stable")) { load(decline: false) }
                     Button(T("载入 3 个月：逐渐下降", "Load 3 months: gradual decline")) { load(decline: true) }
                     Button(T("模拟突然变化（紧急）", "Simulate sudden change (urgent)")) { sudden() }
+                    Button(T("载入：错过检查", "Load: missed checks")) { load(decline: false, offsets: [75, 73, 69, 55, 27]) }
                     Button(T("清除演示数据", "Clear demo data"), role: .destructive) {
                         store.data.sessions.removeAll { $0.isDemo }; store.latestAlert = nil; dismiss()
                     }
@@ -91,11 +92,11 @@ struct DemoControls: View {
         }
     }
 
-    private func load(decline: Bool) {
+    private func load(decline: Bool, offsets custom: [Double]? = nil) {
         store.data.sessions.removeAll { $0.isDemo }
         store.latestAlert = nil
         // baseline days 1,3,7 then every 14 days (about 3 months)
-        let offsets: [Double] = [92, 90, 86, 72, 58, 44, 30, 16, 2]
+        let offsets: [Double] = custom ?? [92, 90, 86, 72, 58, 44, 30, 16, 2]
         var history: [SessionResult] = []
         for (i, d) in offsets.enumerated() {
             let severity = decline ? max(0, Double(i - 3)) / 5.0 : 0     // 0 ... 1.2

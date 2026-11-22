@@ -57,11 +57,14 @@ struct RolePicker: View {
             Text(T("3 分钟脑力小检查，家人随时了解", "A 3-minute brain check your family can follow"))
                 .font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center)
             VStack(spacing: 14) {
-                RoleButton(title: T("我在照顾家人", "I care for a family member")) {
-                    store.data.role = .carer; Notifier.requestPermission()
-                }
-                RoleButton(title: T("我来做检查", "I'm taking the check")) {
-                    store.data.role = .taker; Notifier.requestPermission()
+                Text(T("您是？", "Who are you?")).font(.title2.bold())
+                HStack(spacing: 14) {
+                    RoleButton(title: T("家属", "Family member")) {
+                        store.data.role = .carer; Notifier.requestPermission()
+                    }
+                    RoleButton(title: T("做检查的人", "Taking the check")) {
+                        store.data.role = .taker; Notifier.requestPermission()
+                    }
                 }
             }
             Spacer()
@@ -80,8 +83,8 @@ struct RoleButton: View {
     var title: String; var action: () -> Void
     var body: some View {
         Button(action: action) {
-            Text(title).font(.title2.bold()).minimumScaleFactor(0.7).lineLimit(1)
-                .frame(maxWidth: .infinity).padding(.vertical, 22)
+            Text(title).font(.title3.bold()).multilineTextAlignment(.center).minimumScaleFactor(0.8)
+                .frame(maxWidth: .infinity, minHeight: 64).padding(.vertical, 14).padding(.horizontal, 8)
                 .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
         }
         .buttonStyle(.plain)

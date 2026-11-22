@@ -59,6 +59,30 @@ final class AppStore: ObservableObject {
         return Calendar.current.date(from: comps) ?? due
     }
 
+    /// Days past the due date (0 if not overdue).
+    var overdueDays: Int {
+        guard !realSessions.isEmpty else { return 0 }
+        return max(0, Int(Date().timeIntervalSince(nextDueDate) / 86_400))
+    }
+
+    var daysSinceLast: Int {
+        guard let d = realSessions.last?.date else { return 0 }
+        return Int(Date().timeIntervalSince(d) / 86_400)
+    }
+
+    /// Checks skipped between past sessions (after the baseline week), plus any skipped since the last one.
+    var missedChecks: Int {
+        let s = realSessions
+        guard s.count > 3 else { return overdueDays / data.settings.cadenceDays }
+        let cadence = Double(data.settings.cadenceDays)
+        var missed = 0
+        for i in 3..<s.count {
+            let gap = s[i].date.timeIntervalSince(s[i-1].date) / 86_400
+            if gap > cadence * 1.5 { missed += Int((gap / cadence).rounded()) - 1 }
+        }
+        return missed + overdueDays / data.settings.cadenceDays
+    }
+
     var wordListIndex: Int { realSessions.count % WordList.lists.count }
 
     // MARK: mutations

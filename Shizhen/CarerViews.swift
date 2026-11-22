@@ -14,12 +14,9 @@ struct CarerDashboard: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     if let alert = store.latestAlert { AlertBanner(session: alert) }
+                    if store.overdueDays > 1 || store.missedChecks > 0 { MissedCheckBanner() }
                     StatusCard()
                     actions
-                    if link.connectedPeers.isEmpty {
-                        Text(T("配对码 \(store.data.pairingCode)：在长辈的手机上输入", "Pairing code \(store.data.pairingCode): enter it on their phone"))
-                            .font(.footnote).foregroundStyle(.secondary)
-                    }
                     if store.realSessions.count >= 2 { TrendCard() }
                     AdherenceCard()
                     history
@@ -62,6 +59,13 @@ struct CarerDashboard: View {
                 .buttonStyle(.bordered).controlSize(.large)
         }
         .disabled(link.connectedPeers.isEmpty)
+        .overlay(alignment: .bottom) {
+            if link.connectedPeers.isEmpty {
+                Text(T("配对码 \(store.data.pairingCode)：在长辈的设备上输入", "Pairing code \(store.data.pairingCode): enter it on their device"))
+                    .font(.caption).foregroundStyle(.secondary).offset(y: 22)
+            }
+        }
+        .padding(.bottom, link.connectedPeers.isEmpty ? 22 : 0)
     }
 
     private var history: some View {
@@ -128,6 +132,35 @@ struct AlertBanner: View {
         .padding()
         .foregroundStyle(.white)
         .background(session.status == .urgent ? Color.red : Color.orange, in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+/// Red warning when checks are being skipped (a gap is itself a warning sign).
+struct MissedCheckBanner: View {
+    @EnvironmentObject var store: AppStore
+    @EnvironmentObject var link: FamilyLink
+    var body: some View {
+        let who = store.data.profile.name.isEmpty ? Relation.label(store.data.profile.relation) : store.data.profile.name
+        VStack(alignment: .leading, spacing: 8) {
+            Label(T("检查已中断", "Checks are being missed"), systemImage: "calendar.badge.exclamationmark").font(.title3.bold())
+            if store.overdueDays > 1 {
+                Text(T("\(who) 的检查已逾期 \(store.overdueDays) 天。上次检查是 \(store.daysSinceLast) 天前。",
+                       "\(who)'s check is \(store.overdueDays) days overdue. Last check was \(store.daysSinceLast) days ago."))
+            }
+            if store.missedChecks > 0 {
+                Text(T("近期共错过约 \(store.missedChecks) 次检查。间隔太长会让变化更难被及时发现。",
+                       "About \(store.missedChecks) checks missed recently. Long gaps make changes harder to catch in time."))
+            }
+            Button {
+                link.send(.init(kind: .remind))
+            } label: { Label(T("现在提醒", "Remind now"), systemImage: "bell.fill").bold() }
+                .buttonStyle(.bordered).tint(.white).disabled(link.connectedPeers.isEmpty)
+        }
+        .font(.callout)
+        .foregroundStyle(.white)
+        .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.red, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
