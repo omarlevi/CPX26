@@ -17,6 +17,22 @@ struct CarerSettings: View {
                            "On their phone choose \"I'm taking the check\" → \"Link family\" and enter this code.")).font(.caption)
                     LabeledContent(T("已连接", "Linked devices"), value: link.connectedPeers.isEmpty ? "—" : link.connectedPeers.joined(separator: ", "))
                 }
+                Section(T("家人（最多 5 位）", "Family members (up to 5)")) {
+                    ForEach(Array(store.peopleList.enumerated()), id: \.element.id) { i, p in
+                        Button {
+                            store.switchTo(i)
+                        } label: {
+                            HStack {
+                                Text(store.displayName(p.profile)).foregroundStyle(Color.primary)
+                                Spacer()
+                                if i == min(store.data.activePerson, store.peopleList.count - 1) { Image(systemName: "checkmark") }
+                            }
+                        }
+                    }
+                    if store.peopleList.count < AppStore.maxPeople {
+                        Button { store.addPerson(); dismiss() } label: { Label(T("添加家人", "Add family member"), systemImage: "person.badge.plus") }
+                    }
+                }
                 ProfileFields(profile: $store.data.profile)
                 Section(T("提醒", "Reminders")) {
                     DatePicker(T("提醒时间", "Reminder time"), selection: $reminder, displayedComponents: .hourAndMinute)

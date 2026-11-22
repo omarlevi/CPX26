@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Shizhen · Live Demo</title>
+<link rel="icon" href="logo.png">
+<style>
+:root{--bg:#f5f7f8;--card:#fff;--ink:#14212b;--grey:#566573;--line:#d7dee3;--teal:#0f6e7a;--teal2:#e3f1f2;--amber:#d98a1c;--red:#c0392b;--green:#2f7d3b;--yellow:#b58a00}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#dfe6ea;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Inter","PingFang SC",system-ui,sans-serif;color:var(--ink)}
+.stage{min-height:100%;display:flex;align-items:center;justify-content:center;gap:40px;padding:24px;flex-wrap:wrap}
+.side{max-width:360px}
+.side h1{font-size:40px;margin:8px 0}
+.side p{color:var(--grey);line-height:1.5}
+.side .tag{display:inline-block;background:var(--teal);color:#fff;border-radius:99px;padding:4px 12px;font-size:13px;font-weight:600}
+.side a{color:var(--teal);font-weight:600}
+.phone{width:393px;height:852px;background:var(--bg);border-radius:54px;border:12px solid #14212b;box-shadow:0 30px 80px rgba(20,33,43,.35);overflow:hidden;position:relative;display:flex;flex-direction:column}
+@media (max-width:700px){.stage{padding:0}.side{display:none}.phone{width:100vw;height:100dvh;border:0;border-radius:0;box-shadow:none}}
+.screen{flex:1;overflow-y:auto;padding:54px 18px 24px;display:flex;flex-direction:column;gap:14px}
+.screen.full{padding-top:48px}
+.center{align-items:center;text-align:center}
+h2{font-size:30px;margin:0;line-height:1.15}
+h3{font-size:18px;margin:0}
+.sub{color:var(--grey);font-size:17px;line-height:1.35;margin:0}
+.btn{appearance:none;border:0;border-radius:16px;padding:16px;font-size:20px;font-weight:700;background:var(--teal);color:#fff;width:100%;cursor:pointer}
+.btn:disabled{opacity:.35}
+.btn.ghost{background:var(--teal2);color:var(--teal)}
+.btn.small{font-size:15px;padding:11px;border-radius:12px}
+.choice{appearance:none;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:16px 8px;font-size:19px;font-weight:600;cursor:pointer;color:var(--ink)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.card{background:#fff;border-radius:18px;padding:14px;border:1px solid var(--line)}
+.row{display:flex;gap:10px;align-items:center}
+.spacer{flex:1}
+.pill{display:inline-block;border-radius:99px;padding:3px 10px;font-size:13px;font-weight:700}
+.canvaswrap{position:relative;flex:1;min-height:300px;border-radius:18px;border:2px solid var(--line);background:#fff;overflow:hidden;transition:border-color .2s,box-shadow .2s}
+.canvaswrap.err{border-color:var(--red);box-shadow:0 0 0 4px rgba(192,57,43,.35),0 0 24px rgba(192,57,43,.6)}
+.canvaswrap canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none}
+.errmsg{position:absolute;top:12px;left:50%;transform:translateX(-50%);background:var(--red);color:#fff;border-radius:99px;padding:8px 14px;font-weight:700;font-size:15px;white-space:nowrap;display:none}
+.canvaswrap.err .errmsg{display:block}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-12px)}40%,80%{transform:translateX(12px)}}
+.shake{animation:shake .4s}
+.word{background:var(--teal2);border-radius:16px;padding:16px;font-size:30px;font-weight:800;text-align:center}
+input.txt{font-size:20px;padding:14px;border-radius:14px;border:1.5px solid var(--line);width:100%;background:#fff}
+.topbar{display:flex;align-items:center;gap:8px;font-size:15px}
+.link{color:var(--teal);font-weight:600;background:none;border:0;font-size:15px;cursor:pointer;padding:0}
+.progress{height:6px;background:var(--line);border-radius:9px;overflow:hidden;flex:1}
+.progress i{display:block;height:100%;background:var(--teal)}
+.banner{border-radius:16px;padding:14px;color:#fff}
+.banner b{font-size:18px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{background:var(--bg);border-radius:12px;padding:10px}
+.tile small{color:var(--grey);font-size:12px}
+.tile div{font-size:19px;font-weight:800}
+.list .item{display:flex;align-items:center;gap:10px;padding:10px;background:#fff;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer}
+select.person{font-size:22px;font-weight:800;border:0;background:transparent;color:var(--ink);padding-right:4px}
+.demo{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:12px;color:var(--grey);text-align:center}
+.cal{display:grid;grid-template-columns:repeat(14,1fr);gap:3px}
+.cal i{aspect-ratio:1;border-radius:3px;background:#e7ecef}
+.cal i.on{background:var(--teal)}
+.spinner{width:42px;height:42px;border:4px solid var(--teal2);border-top-color:var(--teal);border-radius:50%;animation:spin 1s linear infinite;margin:20px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="side">
+    <img src="logo.png" width="72" height="72" style="border-radius:16px" alt="">
+    <h1>Shizhen</h1>
+    <span class="tag">Live web demo</span>
+    <p>A 3-minute brain check older adults do on their phone, with results their family can follow.</p>
+    <p><b>Try it:</b> tap <i>Taking the check</i>, draw a clock at 11:10, then see the family view.</p>
+    <p>The clock is scored in your browser by <b>the same trained AI model</b> that runs on iPhone (Core ML in the app, ONNX here). Nothing leaves your device.</p>
+    <p>Native iOS app (Swift, SwiftUI, Core ML): <a href="https://github.com/omarlevi/CPX26" target="_blank" rel="noopener">github.com/omarlevi/CPX26</a></p>
+    <p style="font-size:13px">Screening aid, not a diagnosis. CrossPointX 2026, Track 1.</p>
+  </div>
+  <div class="phone"><div id="app" class="screen"></div></div>
+</div>
+
+<script src="ort/ort.wasm.min.js"></script>
+<script>
+// ---------------------------------------------------------------- state
+const LS = "shizhen-demo-v1";
+const WORDS = [["banana","sunrise","chair"],["leader","season","table"],["village","kitchen","baby"],["river","nation","finger"],["captain","garden","picture"],["daughter","heaven","mountain"]];
+const REL = ["Mom","Dad","Grandma","Grandpa"];
+let S = load();
+function blank(){ return {people: REL.slice(0,2).map(n=>({name:n, sessions:[]})), active:0, role:null}; }
+function load(){ try{ const v = JSON.parse(localStorage.getItem(LS)); if(v && v.people) return v; }catch(e){} return blank(); }
+function save(){ try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){} }
+const P = () => S.people[S.active];
+const $ = s => document.querySelector(s);
+const app = $("#app");
+function html(h, cls=""){ app.className = "screen " + cls; app.innerHTML = h; app.scrollTop = 0; }
+let voiceOn = true;
+function say(t){ if(!voiceOn || !window.speechSynthesis) return; try{ speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(t); u.rate = .9; speechSynthesis.speak(u);}catch(e){} }
+
+// ---------------------------------------------------------------- AI model (same weights as the iOS Core ML model)
+let session = null, modelErr = null;
+async function loadModel(){
+  if(session || modelErr) return;
+  try{
+    ort.env.wasm.wasmPaths = new URL("ort/", location.href).href; ort.env.wasm.numThreads = 1;
+    session = await ort.InferenceSession.create("model/clockscorer.onnx", {executionProviders:["wasm"]});
+  }catch(e){ modelErr = e; console.error(e); }
+}
+loadModel();
+// identical preprocessing to ml/train.py and the iOS app: crop to ink, pad square x1.1, 128x128, ink = 1
+function modelInput(d){
+  const pts = d.strokes.flat(); if(!pts.length) return null;
+  const xs = pts.map(p=>p.x), ys = pts.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const w=Math.max(maxX-minX,1), h=Math.max(maxY-minY,1), side=Math.max(w,h)*1.1+2;
+  const ox=minX-(side-w)/2, oy=minY-(side-h)/2;
+  const c=document.createElement("canvas"); c.width=c.height=512; const g=c.getContext("2d");
+  g.fillStyle="#fff"; g.fillRect(0,0,512,512); g.strokeStyle="#000"; g.lineWidth=10; g.lineCap=g.lineJoin="round";
+  const k=512/side;
+  for(const st of d.strokes){ g.beginPath(); st.forEach((p,i)=>{ const X=(p.x-ox)*k, Y=(p.y-oy)*k; i?g.lineTo(X,Y):g.moveTo(X,Y); }); if(st.length==1) g.lineTo((st[0].x-ox)*k+.5,(st[0].y-oy)*k); g.stroke(); }
+  const s=document.createElement("canvas"); s.width=s.height=128; const sg=s.getContext("2d"); sg.imageSmoothingQuality="high"; sg.drawImage(c,0,0,128,128);
+  const px=sg.getImageData(0,0,128,128).data, arr=new Float32Array(128*128);
+  for(let i=0;i<arr.length;i++){ const gray=(px[i*4]*.299+px[i*4+1]*.587+px[i*4+2]*.114)/255; arr[i]=1-gray; }
+  return arr;
+}
+async function scoreClock(d){
+  await loadModel(); if(!session) return null;
+  const x = modelInput(d); if(!x) return null;
+  const out = await session.run({ink: new ort.Tensor("float32", x, [1,1,128,128])});
+  const p = Array.from(out.probs.data); return {impaired:p[0], minor:p[1], normal:p[2]};
+}
+
+// ---------------------------------------------------------------- analysis (ported from ClockAnalyzer.swift)
+const len = st => st.slice(1).reduce((a,p,i)=>a+Math.hypot(p.x-st[i].x,p.y-st[i].y),0);
+function kinematics(d){
+  const s=[...d.strokes].filter(x=>x.length).sort((a,b)=>a[0].t-b[0].t);
+  const m={strokes:s.length, latency:s.length?s[0][0].t:0};
+  m.total=Math.max(0,...s.map(x=>x[x.length-1].t)); m.ink=s.reduce((a,x)=>a+Math.max(0,x[x.length-1].t-x[0].t),0);
+  m.think=Math.max(0,m.total-m.ink); m.pauses=[];
+  if(m.latency>2 && s.length) m.pauses.push({x:s[0][0].x,y:s[0][0].y,t:0,dur:m.latency});
+  for(let i=1;i<s.length;i++){ const gap=s[i][0].t-s[i-1][s[i-1].length-1].t; if(gap>2) m.pauses.push({x:s[i][0].x,y:s[i][0].y,t:s[i-1][s[i-1].length-1].t,dur:gap}); }
+  let sum=0,n=0; for(const st of s){ if(st.length<7) continue; for(let i=3;i<st.length-3;i++){ let mx=0,my=0; for(let k=-3;k<=3;k++){mx+=st[i+k].x;my+=st[i+k].y;} mx/=7;my/=7; sum+=(st[i].x-mx)**2+(st[i].y-my)**2; n++; } }
+  m.tremor = n? Math.sqrt(sum/n)/Math.max(d.w,d.h)*1000 : 0;
+  return m;
+}
+function geometry(d){
+  const s=d.strokes.filter(x=>x.length>1); if(!s.length) return {hands:0,handsOK:false,marks:0,neglect:false};
+  let oi=0; s.forEach((x,i)=>{ if(len(x)>len(s[oi])) oi=i; });
+  const o=s[oi]; let cx=o.reduce((a,p)=>a+p.x,0)/o.length, cy=o.reduce((a,p)=>a+p.y,0)/o.length;
+  let r=o.reduce((a,p)=>a+Math.hypot(p.x-cx,p.y-cy),0)/o.length;
+  const ang=(x,y)=>{ let a=Math.atan2(x-cx,-(y-cy))*180/Math.PI; return a<0?a+360:a; };
+  const diff=(a,b)=>{ const q=Math.abs(a-b)%360; return Math.min(q,360-q); };
+  const hands=[], handIdx=new Set();
+  s.forEach((st,i)=>{ if(i===oi) return; const a=st[0], b=st[st.length-1], chord=Math.hypot(b.x-a.x,b.y-a.y), L=len(st);
+    if(chord<=r*.25||L<=0||chord/L<=.75) return; const da=Math.hypot(a.x-cx,a.y-cy), db=Math.hypot(b.x-cx,b.y-cy);
+    if(Math.min(da,db)>=r*.35) return; const far=da<db?b:a; hands.push(ang(far.x,far.y)); handIdx.add(i); });
+  const handsOK = hands.some(a=>diff(a,60)<25) && hands.some(a=>diff(a,335)<30);
+  // number marks: cluster remaining strokes outside the centre
+  const boxes=[]; s.forEach((st,i)=>{ if(i===oi||handIdx.has(i)) return; const mx=st.reduce((a,p)=>a+p.x,0)/st.length, my=st.reduce((a,p)=>a+p.y,0)/st.length;
+    if(Math.hypot(mx-cx,my-cy)<=r*.3) return; boxes.push({x0:Math.min(...st.map(p=>p.x)),x1:Math.max(...st.map(p=>p.x)),y0:Math.min(...st.map(p=>p.y)),y1:Math.max(...st.map(p=>p.y))}); });
+  const gap=r*.09, marks=[];
+  for(let b of boxes){ let merged=true; while(merged){ merged=false; const j=marks.findIndex(o2=>!(b.x1+gap<o2.x0||o2.x1+gap<b.x0||b.y1+gap<o2.y0||o2.y1+gap<b.y0));
+      if(j>=0){ const o2=marks.splice(j,1)[0]; b={x0:Math.min(b.x0,o2.x0),x1:Math.max(b.x1,o2.x1),y0:Math.min(b.y0,o2.y0),y1:Math.max(b.y1,o2.y1)}; merged=true; } } marks.push(b); }
+  let L=0,R=0; marks.forEach(m=>{ const mx=(m.x0+m.x1)/2; if(mx<cx-r*.05)L++; else if(mx>cx+r*.05)R++; });
+  const bal=L/Math.max(1,L+R);
+  return {hands:hands.length, handsOK, marks:Math.min(12,marks.length), neglect:marks.length>=6&&(bal<.2||bal>.8), balance:bal};
+}
+function clockPoints(m){
+  const modelOK = m.ai ? m.ai.impaired < .6 : true;
+  const normalish = m.ai ? (m.ai.normal >= .5 || (m.ai.minor > m.ai.impaired && m.ai.minor > m.ai.normal)) : m.marks>=10;
+  return (m.handsOK && modelOK && (m.marks>=10 || normalish) && !m.neglect) ? 2 : 0;
+}
+
+// ---------------------------------------------------------------- risk engine (ported from RiskEngine.swift)
+const miniCog = s => s.recall + s.clockPts;
+function meanSD(v){ const m=v.reduce((a,b)=>a+b,0)/v.length; const sd=Math.sqrt(v.reduce((a,b)=>a+(b-m)**2,0)/Math.max(1,v.length-1)); return [m,Math.max(sd,.15*Math.max(Math.abs(m),.1))]; }
+function evaluate(history, s){
+  const prev=history[history.length-1], reasons=[];
+  if(prev && (s.date-prev.date)<=15*864e5){
+    if(miniCog(prev)-miniCog(s)>=3) reasons.push(`Sudden drop since last check (Mini-Cog ${miniCog(prev)} → ${miniCog(s)})`);
+    if(prev.orient===2 && s.orient===0) reasons.push("Knew the day and year last time, not this time");
+    if(s.neglect && !prev.neglect) reasons.push("Numbers crowded on one side (possible one-sided neglect)");
+    if(reasons.length) return ["urgent",reasons];
+  }
+  const all=[...history,s];
+  if(all.length<3) return ["building",[`Baseline ${all.length} of 3`]];
+  if(all.length===3) return ["stable",["Baseline complete"]];
+  const b=all.slice(0,3), bMC=b.reduce((a,x)=>a+miniCog(x),0)/3;
+  if(miniCog(s)<3 && prev && miniCog(prev)<3) reasons.push("Mini-Cog below 3 on two checks in a row");
+  if((s.ai?.impaired??0)>.6 && (prev?.ai?.impaired??0)>.6) reasons.push("Clock model flagged clear errors twice in a row");
+  const rc=all.slice(-3).map(miniCog); if(rc[0]>rc[1]&&rc[1]>rc[2]&&rc[2]<bMC-1) reasons.push("Steady decline over the last three checks");
+  if(reasons.length) return ["doctor",reasons];
+  const [tm,ts]=meanSD(b.map(x=>x.think)), [pm,ps]=meanSD(b.map(x=>x.pauses.length));
+  if(miniCog(s)<3) reasons.push("Mini-Cog below 3 this time");
+  if((s.think-tm)/ts>1.5) reasons.push("Thinking pauses longer than usual");
+  if((s.pauses.length-pm)/ps>1.5) reasons.push("More hesitations than usual");
+  if(reasons.length) return ["watch",reasons];
+  return ["stable",["Stable compared with personal baseline"]];
+}
+const STATUS = {building:["Building baseline","#566573","#e7ecef"],stable:["Stable","#2f7d3b","#e2f2e4"],watch:["Watch","#8a6a00","#fbf1cf"],doctor:["See a doctor","#a85a00","#fbe6cf"],urgent:["Urgent","#c0392b","#f8dcd8"]};
+const MSG = {building:"Building a personal baseline. Keep going.",stable:"Stable compared with the personal baseline.",watch:"Some changes. We suggest an extra check in 3 days.",
+  doctor:"This is not a medical diagnosis. These results show changes often linked to memory or thinking problems. Please see a licensed doctor soon.",
+  urgent:"A sudden change like this can be caused by delirium, infection, medication effects or a stroke, which are often treatable. Contact a doctor today. If there is face drooping, arm weakness or slurred speech, call 120 now."};
+const pill = st => `<span class="pill" style="color:${STATUS[st][1]};background:${STATUS[st][2]}">${STATUS[st][0]}</span>`;
+
+// ---------------------------------------------------------------- drawing canvas
+function makeCanvas(wrap, opts={}){
+  const c=wrap.querySelector("canvas"), g=c.getContext("2d"), dpr=window.devicePixelRatio||1;
+  const rect=wrap.getBoundingClientRect(); c.width=rect.width*dpr; c.height=rect.height*dpr; g.scale(dpr,dpr);
+  const D={strokes:[], w:rect.width, h:rect.height, restarts:0}; const t0=performance.now(); let cur=null;
+  const guide=()=>{ g.clearRect(0,0,D.w,D.h); if(opts.guide){ g.save(); g.setLineDash([8,8]); g.strokeStyle="#b7c2c9"; g.lineWidth=3; g.beginPath(); g.arc(D.w/2,D.h/2,Math.min(D.w,D.h)*.3,0,Math.PI*2); g.stroke(); g.restore(); }
+    g.strokeStyle="#000"; g.lineWidth=4; g.lineCap=g.lineJoin="round"; for(const st of D.strokes){ g.beginPath(); st.forEach((p,i)=>i?g.lineTo(p.x,p.y):g.moveTo(p.x,p.y)); g.stroke(); } };
+  guide();
+  const pos=e=>{ const r=c.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top, t:(performance.now()-t0)/1000}; };
+  const out=p=>p.x<6||p.y<6||p.x>D.w-6||p.y>D.h-6;
+  c.onpointerdown=e=>{ c.setPointerCapture(e.pointerId); cur=[pos(e)]; D.strokes.push(cur); };
+  c.onpointermove=e=>{ if(!cur) return; const p=pos(e); cur.push(p); if(opts.guard && out(p)){ cur=null; D.strokes=[]; D.restarts++; guide(); oob(wrap); opts.onChange&&opts.onChange(D); return; } guide(); };
+  c.onpointerup=c.onpointercancel=()=>{ cur=null; opts.onChange&&opts.onChange(D); };
+  D.clear=()=>{ D.strokes=[]; guide(); opts.onChange&&opts.onChange(D); };
+  return D;
+}
+function oob(wrap){ wrap.classList.add("err","shake"); if(navigator.vibrate) navigator.vibrate(120); say("Let's try again. Please stay inside the box.");
+  setTimeout(()=>wrap.classList.remove("shake"),450); setTimeout(()=>wrap.classList.remove("err"),1600); }
+
+// ---------------------------------------------------------------- screens: welcome
+function welcome(){
+  html(`<div class="spacer"></div><img src="logo.png" width="110" height="110" style="border-radius:26px;align-self:center" alt="">
+  <h2 style="font-size:40px">Shizhen</h2><p class="sub">A 3-minute brain check your family can follow</p><div class="spacer"></div>
+  <h3>Who are you?</h3><div class="grid2"><button class="choice" id="fam">Family member</button><button class="choice" id="tk">Taking the check</button></div>
+  <div class="spacer"></div><p class="note">All analysis happens on this device.<br>Not a medical diagnosis.</p>`, "center");
+  $("#fam").onclick=()=>{ S.role="carer"; save(); carer(); };
+  $("#tk").onclick=()=>{ S.role="taker"; save(); takerHome(); };
+}
+
+// ---------------------------------------------------------------- taker
+function takerHome(){
+  const h=new Date().getHours(), greet=h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  html(`<div class="topbar"><button class="link" id="back">‹ Back</button><div class="spacer"></div><button class="link" id="voice">${voiceOn?"🔊 Voice on":"🔈 Voice off"}</button></div>
+  <div class="spacer"></div><h2 style="font-size:36px">${greet}!</h2>
+  <button class="btn" id="start" style="padding:40px 16px;border-radius:30px;font-size:30px">✍️<br>Start today's check<br><span style="font-size:17px;font-weight:500">About 3 minutes</span></button>
+  <p class="sub">Checking as: <b>${P().name}</b></p><div class="spacer"></div>`, "center");
+  $("#back").onclick=welcome; $("#voice").onclick=()=>{ voiceOn=!voiceOn; takerHome(); };
+  $("#start").onclick=()=>check();
+}
+async function check(){
+  const R={date:Date.now(), orient:0, recall:0};
+  const words = WORDS[P().sessions.length % WORDS.length];
+  const step=(n,body,cls="")=>html(`<div class="topbar"><button class="link" id="exit">✕ Exit</button><div class="progress"><i style="width:${n/6*100}%"></i></div></div>${body}`, cls);
+  const exitBind=()=>$("#exit").onclick=takerHome;
+  // 1 warm-up
+  await new Promise(res=>{ step(1,`<h2>Warm-up</h2><p class="sub">Trace the dotted circle with your finger</p><div class="canvaswrap" id="cw"><canvas></canvas></div><button class="btn" id="go" disabled>Done</button>`);
+    exitBind(); say("Warm-up. Please trace around the circle."); const D=makeCanvas($("#cw"),{guide:true,onChange:d=>$("#go").disabled=!d.strokes.length});
+    $("#go").onclick=()=>{ R.calTremor=kinematics(D).tremor; res(); }; });
+  // 2 day
+  await new Promise(res=>{ const days=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"], today=new Date().getDay();
+    step(2,`<h2>What day of the week is it today?</h2><div class="grid2">${days.map((d,i)=>`<button class="choice" data-i="${i}">${d}</button>`).join("")}</div>`);
+    exitBind(); say("What day of the week is it today?");
+    app.querySelectorAll("[data-i]").forEach(b=>b.onclick=()=>{ if(+b.dataset.i===today) R.orient++; res(); }); });
+  // 3 year
+  await new Promise(res=>{ const y=new Date().getFullYear(), opts=[y-2,y-1,y,y+1];
+    step(3,`<h2>What year is it?</h2><div class="grid2">${opts.map(o=>`<button class="choice" data-y="${o}">${o}</button>`).join("")}</div>`);
+    exitBind(); say("What year is it?");
+    app.querySelectorAll("[data-y]").forEach(b=>b.onclick=()=>{ if(+b.dataset.y===y) R.orient++; res(); }); });
+  // 4 words
+  await new Promise(res=>{ step(4,`<h2>Please remember these three words</h2><p class="sub">I'll ask you for them later</p>${words.map(w=>`<div class="word">${w}</div>`).join("")}<div class="spacer"></div><button class="btn" id="go">I've got them</button>`);
+    exitBind(); say("Please remember these three words: "+words.join(", ")); $("#go").onclick=res; });
+  // 5 clock
+  const D = await new Promise(res=>{ step(5,`<div style="text-align:center"><h3 style="font-size:22px">Draw a clock</h3><p class="sub" style="font-size:15px">Put in all the numbers and set the hands to ten past eleven (11:10)</p></div>
+    <div class="canvaswrap" id="cw"><canvas></canvas><div class="errmsg">Stay inside the box. Try again.</div></div>
+    <div class="row"><button class="btn ghost small" id="clr" style="width:35%">Clear</button><button class="btn small" id="go" disabled>Done</button></div>`);
+    exitBind(); say("Please draw a clock. Put in all the numbers, and set the hands to ten past eleven, eleven ten.");
+    const D=makeCanvas($("#cw"),{guard:true,onChange:d=>$("#go").disabled=!d.strokes.length}); $("#clr").onclick=()=>D.clear(); $("#go").onclick=()=>res(D); });
+  // 6 recall
+  await new Promise(res=>{ step(6,`<h2>What were the three words?</h2><p class="sub">One word per box, any order</p>${[1,2,3].map(i=>`<input class="txt" id="w${i}" placeholder="Word ${i}" autocomplete="off" autocapitalize="none">`).join("")}<div class="spacer"></div><button class="btn" id="go">Done</button>`);
+    exitBind(); say("What were the three words I asked you to remember? Please type them.");
+    $("#go").onclick=()=>{ const typed=[1,2,3].map(i=>$("#w"+i).value.trim().toLowerCase()).filter(Boolean);
+      R.recall=words.filter(w=>typed.some(t=>t===w||t.includes(w)||(t.length>=4&&w.startsWith(t.slice(0,4))))).length; res(); }; });
+  // analyse
+  html(`<div class="spacer"></div><div class="spinner"></div><h3>Analysing on this device…</h3><p class="sub">AI model running in your browser</p><div class="spacer"></div>`,"center");
+  const k=kinematics(D), geo=geometry(D), ai=await scoreClock(D);
+  Object.assign(R,{drawing:{strokes:D.strokes,w:D.w,h:D.h}, restarts:D.restarts, think:k.think, total:k.total, latency:k.latency, pauses:k.pauses, strokes:k.strokes, tremor:k.tremor,
+    hands:geo.hands, handsOK:geo.handsOK, marks:geo.marks, neglect:geo.neglect, ai});
+  R.clockPts=clockPoints(R);
+  const [st,reasons]=evaluate(P().sessions,R); R.status=st; R.reasons=reasons;
+  P().sessions.push(R); save();
+  say("Thank you, well done!");
+  html(`<div class="spacer"></div><div style="font-size:80px">✅</div><h2>Thank you!</h2><p class="sub">Your family has been updated</p>
+  ${st==="urgent"||st==="doctor"?`<div class="card" style="background:#fbe6cf">${MSG[st]}</div>`:""}
+  <div class="spacer"></div><button class="btn" id="fam">See what the family sees →</button><button class="btn ghost" id="home">Back to home</button>`,"center");
+  $("#fam").onclick=()=>{ S.role="carer"; save(); detail(P().sessions.length-1); };
+  $("#home").onclick=takerHome;
+}
+
+// ---------------------------------------------------------------- carer
+function carer(){
+  const p=P(), ss=p.sessions, last=ss[ss.length-1], st=last?last.status:"building";
+  const due = last ? last.date + (ss.length===1?2:ss.length===2?4:14)*864e5 : Date.now();
+  const overdue = last ? Math.floor((Date.now()-due)/864e5) : 0;
+  html(`<div class="topbar"><button class="link" id="back">‹</button>
+    <select class="person" id="who">${S.people.map((x,i)=>`<option value="${i}" ${i===S.active?"selected":""}>${x.name}</option>`).join("")}<option value="add">+ Add family member</option></select>
+    <div class="spacer"></div><button class="link" id="tk">Take check ✍️</button></div>
+  ${last && (st==="urgent"||st==="doctor") ? `<div class="banner" style="background:${st==="urgent"?"var(--red)":"#c96f00"}"><b>⚠️ ${STATUS[st][0]}</b><br>${MSG[st]}<br>${last.reasons.map(r=>"• "+r).join("<br>")}</div>`:""}
+  ${overdue>1?`<div class="banner" style="background:var(--red)"><b>📅 Checks are being missed</b><br>${p.name}'s check is ${overdue} days overdue.</div>`:""}
+  <div class="card"><div class="row">${pill(st)}<div class="spacer"></div><small style="color:var(--grey)">${ss.length} checks</small></div>
+    <p style="margin:8px 0 0">${MSG[st]}</p>${last?last.reasons.map(r=>`<p class="sub" style="font-size:14px;margin:4px 0 0">• ${r}</p>`).join(""):""}
+    ${last?`<div class="tiles" style="margin-top:10px"><div class="tile"><small>Last check</small><div>${new Date(last.date).toLocaleDateString()}</div></div><div class="tile"><small>Mini-Cog</small><div>${miniCog(last)}/5</div></div></div>`:""}</div>
+  ${ss.length>=2?`<div class="card"><h3>Trend vs. personal baseline</h3>${trendSVG(ss)}<p class="note" style="text-align:left">Mini-Cog score (out of 5). Dashed line = baseline from the first 3 checks.</p></div>`:""}
+  <div class="card"><h3>Consistency (last 8 weeks)</h3><div class="cal" style="margin-top:8px">${calendar(ss)}</div></div>
+  <div class="card"><h3>Try a scenario</h3><p class="note" style="text-align:left;margin:4px 0 8px">Loads clearly labelled demo data for ${p.name}.</p>
+    <div class="demo"><button class="btn ghost small" data-d="stable">3 months: stable</button><button class="btn ghost small" data-d="decline">Gradual decline</button>
+    <button class="btn ghost small" data-d="sudden">Sudden change</button><button class="btn ghost small" data-d="missed">Missed checks</button></div>
+    <button class="link" id="reset" style="margin-top:10px">Clear ${p.name}'s data</button></div>
+  <div class="list"><h3>All checks</h3>${ss.length?ss.map((s,i)=>({s,i})).reverse().map(({s,i})=>`<div class="item" data-s="${i}">${pill(s.status)}<div><b style="font-size:14px">${new Date(s.date).toLocaleDateString()}</b><br><small style="color:var(--grey)">Mini-Cog ${miniCog(s)}/5 · ${s.pauses.length} pauses${s.demo?" · demo data":""}</small></div><div class="spacer"></div>›</div>`).join(""):`<p class="sub" style="font-size:15px">No checks yet. Tap "Take check as ${p.name}" or load a scenario.</p>`}</div>`);
+  $("#back").onclick=welcome;
+  $("#who").onchange=e=>{ if(e.target.value==="add"){ if(S.people.length>=5){ alert("Up to 5 family members"); carer(); return; } const n=REL.find(r=>!S.people.some(x=>x.name===r))||("Relative "+(S.people.length+1)); S.people.push({name:n,sessions:[]}); S.active=S.people.length-1; }
+    else S.active=+e.target.value; save(); carer(); };
+  $("#tk").onclick=()=>{ S.role="taker"; save(); takerHome(); };
+  $("#reset").onclick=()=>{ p.sessions=[]; save(); carer(); };
+  app.querySelectorAll("[data-d]").forEach(b=>b.onclick=()=>{ scenario(b.dataset.d); carer(); });
+  app.querySelectorAll("[data-s]").forEach(el=>el.onclick=()=>detail(+el.dataset.s));
+}
+function trendSVG(ss){
+  const W=330,H=140,pad=24, n=ss.length, xs=i=>pad+i*(W-2*pad)/Math.max(1,n-1), ys=v=>H-pad-(v/5)*(H-2*pad);
+  const base=ss.length>=3?ss.slice(0,3).reduce((a,s)=>a+miniCog(s),0)/3:null;
+  let path=ss.map((s,i)=>`${i?"L":"M"}${xs(i).toFixed(1)},${ys(miniCog(s)).toFixed(1)}`).join(" ");
+  return `<svg viewBox="0 0 ${W} ${H}" width="100%">${[0,1,2,3,4,5].map(v=>`<line x1="${pad}" x2="${W-pad}" y1="${ys(v)}" y2="${ys(v)}" stroke="#eef2f4"/><text x="4" y="${ys(v)+4}" font-size="10" fill="#566573">${v}</text>`).join("")}
+  ${base!==null?`<line x1="${pad}" x2="${W-pad}" y1="${ys(base)}" y2="${ys(base)}" stroke="#566573" stroke-dasharray="5 4"/>`:""}
+  <path d="${path}" fill="none" stroke="#0f6e7a" stroke-width="2.5"/>${ss.map((s,i)=>`<circle cx="${xs(i)}" cy="${ys(miniCog(s))}" r="5" fill="${STATUS[s.status][1]}"/>`).join("")}</svg>`;
+}
+function calendar(ss){ const done=new Set(ss.map(s=>new Date(s.date).toDateString())); let h=""; for(let i=55;i>=0;i--){ const d=new Date(Date.now()-i*864e5); h+=`<i class="${done.has(d.toDateString())?"on":""}"></i>`; } return h; }
+
+// ---------------------------------------------------------------- session detail + stroke replay
+function detail(i){
+  const s=P().sessions[i], ai=s.ai;
+  const aiTxt = ai ? (ai.impaired>=.6?"Impaired":ai.normal>=Math.max(ai.minor,ai.impaired)?"Normal":"Minor errors") : "—";
+  html(`<div class="topbar"><button class="link" id="back">‹ ${P().name}</button><div class="spacer"></div>${pill(s.status)}</div>
+  <h2 style="font-size:24px">Check details</h2><p class="sub" style="font-size:14px">${new Date(s.date).toLocaleString()}${s.demo?" · demo data":""}</p>
+  <div class="card"><p style="margin:0">${MSG[s.status]}</p>${s.reasons.map(r=>`<p class="sub" style="font-size:14px;margin:4px 0 0">• ${r}</p>`).join("")}</div>
+  <div class="card"><h3>Stroke replay</h3><p class="note" style="text-align:left;margin:4px 0">Orange circles = pauses over 2 s, where they stopped to think.</p>
+    <div style="position:relative;aspect-ratio:1;background:#fff;border:1px solid var(--line);border-radius:12px"><canvas id="rp" style="width:100%;height:100%"></canvas></div>
+    <div class="row" style="margin-top:8px"><button class="btn small" id="play" style="width:90px">▶ Play</button><input type="range" id="sl" min="0" max="1000" value="1000" style="flex:1"><small id="tt" style="width:70px;text-align:right"></small></div></div>
+  <div class="tiles">
+    <div class="tile"><small>Clock AI (on-device)</small><div>${aiTxt}</div><small>${ai?Math.round(ai.impaired*100)+"% impaired":""}</small></div>
+    <div class="tile"><small>Mini-Cog</small><div>${miniCog(s)}/5</div><small>memory ${s.recall}/3 · clock ${s.clockPts}/2</small></div>
+    <div class="tile"><small>Hands at 11:10</small><div>${s.handsOK?"✓":"✗"}</div><small>${s.hands} found</small></div>
+    <div class="tile"><small>Number marks</small><div>${s.marks}/12</div><small>${s.neglect?"⚠️ one-sided":"spread around"}</small></div>
+    <div class="tile"><small>Think time</small><div>${s.think.toFixed(0)}s</div><small>of ${s.total.toFixed(0)}s total</small></div>
+    <div class="tile"><small>Pauses &gt; 2s</small><div>${s.pauses.length}</div><small>${s.strokes} strokes</small></div>
+    <div class="tile"><small>Tremor index</small><div>${s.tremor.toFixed(1)}</div><small>${s.tremor>4?"elevated":"typical"}</small></div>
+    <div class="tile"><small>Orientation</small><div>${s.orient}/2</div><small>day + year</small></div></div>
+  <p class="note">Not a medical diagnosis.</p>`);
+  $("#back").onclick=carer;
+  const c=$("#rp"), g=c.getContext("2d"), dpr=window.devicePixelRatio||1, r=c.getBoundingClientRect(); c.width=r.width*dpr; c.height=r.height*dpr; g.scale(dpr,dpr);
+  const d=s.drawing, sc=Math.min(r.width/d.w,r.height/d.h), ox=(r.width-d.w*sc)/2, oy=(r.height-d.h*sc)/2, T=Math.max(.1,s.total||0.1);
+  const P2=(x,y)=>[ox+x*sc, oy+y*sc];
+  function draw(t){ g.clearRect(0,0,r.width,r.height); g.strokeStyle="#000"; g.lineWidth=3; g.lineCap=g.lineJoin="round";
+    for(const st of d.strokes){ const pts=st.filter(p=>p.t<=t); if(!pts.length) continue; g.beginPath(); pts.forEach((p,i)=>{ const [X,Y]=P2(p.x,p.y); i?g.lineTo(X,Y):g.moveTo(X,Y); }); g.stroke(); }
+    for(const p of s.pauses){ const [X,Y]=P2(p.x,p.y);
+      if(t>=p.t+p.dur){ const rad=Math.min(26,6+p.dur*3); g.fillStyle="rgba(217,138,28,.3)"; g.beginPath(); g.arc(X,Y,rad,0,7); g.fill(); g.strokeStyle="#d98a1c"; g.lineWidth=2; g.stroke();
+        g.fillStyle="#d98a1c"; g.font="bold 12px system-ui"; g.textAlign="center"; g.fillText(p.dur.toFixed(0)+"s",X,Y-rad-4); }
+      else if(t>=p.t){ g.strokeStyle="#d98a1c"; g.lineWidth=3; g.beginPath(); g.arc(X,Y,6+(t-p.t)*3,0,7); g.stroke(); } }
+    $("#tt").textContent=`${t.toFixed(0)} / ${T.toFixed(0)}s`; }
+  let t=T, raf=null; draw(t);
+  $("#sl").oninput=e=>{ t=e.target.value/1000*T; draw(t); };
+  $("#play").onclick=()=>{ if(raf){ cancelAnimationFrame(raf); raf=null; $("#play").textContent="▶ Play"; return; } if(t>=T) t=0; let last=performance.now(); $("#play").textContent="❚❚";
+    const loop=now=>{ t=Math.min(T,t+(now-last)/1000*2); last=now; $("#sl").value=t/T*1000; draw(t); if(t<T) raf=requestAnimationFrame(loop); else { raf=null; $("#play").textContent="▶ Play"; } }; raf=requestAnimationFrame(loop); };
+}
+
+// ---------------------------------------------------------------- demo scenarios (labelled demo data)
+function rng(seed){ return ()=>{ seed=(seed*16807)%2147483647; return (seed-1)/2147483646; }; }
+function demoClock(sev, seed){
+  const R=rng(seed+7), j=a=>(R()-.5)*2*a; let t=.8+sev*4; const c=300, r=230, strokes=[], sq=1-sev*.25;
+  const face=[]; for(let i=0;i<=90;i++){ const a=i/90*2*Math.PI*(1-sev*.08); face.push({x:c+Math.sin(a)*r+j(1+sev*4), y:c-Math.cos(a)*r*sq+j(1+sev*4), t}); t+=.02+sev*.01; } strokes.push(face);
+  const count=sev<.4?12:sev<.8?10:7;
+  for(let n=1;n<=count;n++){ t+=.35+sev*(n%3===0?4.5:1.2)+j(.1); const a=n*Math.PI/6*(1-sev*.45), tk=[];
+    for(let k=0;k<=6;k++){ const f=k/6; tk.push({x:c+Math.sin(a)*r*(.82-.12*f)+j(sev*2), y:c-Math.cos(a)*r*(.82-.12*f)*sq+j(sev*2), t}); t+=.03; } strokes.push(tk); }
+  for(const [ang,L] of [[sev<.5?335:300,.45],[sev<.5?60:300,.7]]){ t+=.6+sev*3; const hp=[]; for(let k=0;k<=10;k++){ const f=k/10, a=ang*Math.PI/180; hp.push({x:c+Math.sin(a)*r*L*f+j(sev*2), y:c-Math.cos(a)*r*L*f+j(sev*2), t}); t+=.03; } strokes.push(hp); }
+  return {strokes, w:600, h:600};
+}
+function demoSession(daysAgo, sev, seed){
+  const d=demoClock(sev,seed), k=kinematics(d);
+  const s={demo:true, date:Date.now()-daysAgo*864e5, drawing:d, orient:sev<.8?2:1, recall:sev<.3?3:sev<.7?2:1, restarts:sev>.7?1:0,
+    think:k.think, total:k.total, latency:k.latency, pauses:k.pauses, strokes:k.strokes, tremor:k.tremor, hands:2, handsOK:sev<.5, marks:sev<.4?12:sev<.8?10:7, neglect:false,
+    ai:{impaired:Math.min(.95,.05+sev*.85), minor:.1, normal:Math.max(.02,.85-sev*.8)}};
+  s.clockPts=clockPoints(s); return s;
+}
+function scenario(kind){
+  const p=P(); const make=(offs,sevf)=>{ const out=[]; offs.forEach((d,i)=>{ const s=demoSession(d,sevf(i),i); const [st,rs]=evaluate(out,s); s.status=st; s.reasons=rs; out.push(s); }); return out; };
+  if(kind==="stable") p.sessions=make([92,90,86,72,58,44,30,16,2],()=>0);
+  if(kind==="decline") p.sessions=make([92,90,86,72,58,44,30,16,2],i=>Math.min(1,Math.max(0,(i-3)/5)));
+  if(kind==="missed") p.sessions=make([75,73,69,55,27],()=>0);
+  if(kind==="sudden"){ if(p.sessions.length<3) p.sessions=make([92,90,86,72,58,44,30,16,2],()=>0);
+    const s=demoSession(0,1,99); s.orient=0; s.recall=0; s.neglect=true; s.clockPts=0; const [st,rs]=evaluate(p.sessions,s); s.status=st; s.reasons=rs; p.sessions.push(s); }
+  save();
+}
+
+// ---------------------------------------------------------------- boot
+window.__shizhen = {scoreClock, kinematics, geometry, demoClock, state:()=>S};
+if(S.role==="carer") carer(); else if(S.role==="taker") takerHome(); else welcome();
+</script>
+</body>
+</html>

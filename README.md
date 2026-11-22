@@ -8,6 +8,8 @@ Shizhen ("hour hand") turns the clinically used Clock Drawing Test (CDT) and Min
 
 Built for **CrossPointX 2026, Track 1: Apple Human-Centered Care**.
 
+**▶ Try it in your browser (no install):** https://omarlevi.github.io/CPX26/demo/ . The same trained AI model scores your clock on your device.
+
 ## The problem
 
 - China has **323 million people aged 60+** (end of 2025), and about **60% live alone or with only a spouse** ("empty nesters"). [Caixin 2026](https://www.caixinglobal.com/2026-08-01/chinas-elderly-population-tops-323-million-as-aging-pressures-mount-102470288.html), [SCMP](https://www.scmp.com/news/china/politics/article/3283392/more-60-chinese-over-60-are-empty-nesters-survey-finds)
