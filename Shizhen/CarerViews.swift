@@ -25,8 +25,10 @@ struct CarerDashboard: View {
                 .frame(maxWidth: 900)
                 .frame(maxWidth: .infinity)
             }
-            .navigationTitle(store.data.profile.name.isEmpty ? Relation.label(store.data.profile.relation) : store.data.profile.name)
+            .navigationTitle(store.displayName(store.data.profile))
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .principal) { PersonSwitcher() }
                 ToolbarItem(placement: .topBarLeading) {
                     Image(systemName: "clock.badge.checkmark").font(.title2).foregroundStyle(Color.accentColor)
                         .onTapGesture(count: 3) { showDemo = true }
@@ -45,6 +47,7 @@ struct CarerDashboard: View {
             .navigationDestination(for: SessionResult.self) { SessionDetail(session: $0) }
         }
         .onAppear { link.startHosting(code: store.data.pairingCode) }
+        .onChange(of: store.data.pairingCode) { _, code in link.startHosting(code: code) }
     }
 
     private var actions: some View {
@@ -95,6 +98,42 @@ struct CarerDashboard: View {
                     .font(.callout).foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+/// "Mom ▾" menu: switch between up to 5 family members, or add one.
+struct PersonSwitcher: View {
+    @EnvironmentObject var store: AppStore
+    var body: some View {
+        let people = store.peopleList
+        Menu {
+            ForEach(Array(people.enumerated()), id: \.element.id) { i, p in
+                Button {
+                    store.switchTo(i)
+                } label: {
+                    if i == min(store.data.activePerson, people.count - 1) {
+                        Label(store.displayName(p.profile), systemImage: "checkmark")
+                    } else {
+                        Text(store.displayName(p.profile) + "  ·  " + (p.sessions.sorted { $0.date < $1.date }.last?.status.title ?? RiskStatus.building.title))
+                    }
+                }
+            }
+            Divider()
+            if people.count < AppStore.maxPeople {
+                Button { store.addPerson() } label: { Label(T("添加家人", "Add family member"), systemImage: "person.badge.plus") }
+            }
+            if people.count > 1 {
+                Button(role: .destructive) { store.removeActivePerson() } label: {
+                    Label(T("移除 \(store.displayName(store.data.profile))", "Remove \(store.displayName(store.data.profile))"), systemImage: "trash")
+                }
+            }
+        } label: {
+            HStack(spacing: 6) {
+                Text(store.displayName(store.data.profile)).font(.headline).foregroundStyle(Color.primary)
+                Image(systemName: "chevron.down.circle.fill").foregroundStyle(Color.accentColor)
+            }
+        }
+        .accessibilityLabel(T("切换家人", "Switch family member"))
     }
 }
 

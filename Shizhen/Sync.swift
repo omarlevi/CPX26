@@ -42,6 +42,7 @@ final class FamilyLink: NSObject, ObservableObject {
     /// Taker: look for the carer advertising this code.
     func join(code: String) {
         wantedCode = code
+        store?.data.linkedCode = code
         browser?.stopBrowsingForPeers()
         let b = MCNearbyServiceBrowser(peer: me, serviceType: Self.service)
         b.delegate = self
@@ -60,11 +61,13 @@ final class FamilyLink: NSObject, ObservableObject {
         switch e.kind {
         case .session:
             guard let s = e.session else { return }
-            store.add(s)
-            if store.data.role == .carer {
-                Notifier.post(title: T("\(store.data.profile.name) 完成了检查", "\(store.data.profile.name) finished a check"),
+            guard store.data.role == .carer else { store.add(s); return }
+            store.receive(s, fromCode: e.name)
+            let who = store.name(forCode: e.name)
+            do {
+                Notifier.post(title: T("\(who) 完成了检查", "\(who) finished a check"),
                               body: "\(s.status.title) · Mini-Cog \(s.miniCog)/5", critical: s.status == .urgent || s.status == .doctor)
-                if s.status == .urgent || s.status == .doctor { store.latestAlert = s }
+                if (s.status == .urgent || s.status == .doctor) && store.name(forCode: e.name) == store.displayName(store.data.profile) { store.latestAlert = s }
             }
         case .profile:
             if let p = e.profile { store.data.profile = p }

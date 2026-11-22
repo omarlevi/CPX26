@@ -160,9 +160,13 @@ struct SessionFlow: View {
         VStack(spacing: 10) {
             VStack(spacing: 2) {
                 Text(T("请画一个钟", "Draw a clock")).font(.title2.bold())
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(T("写上所有数字，把指针指向十一点十分（11:10）", "Put in all the numbers and set the hands to ten past eleven (11:10)"))
                     .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .lineLimit(nil).fixedSize(horizontal: false, vertical: true)
             }
+            .frame(maxWidth: .infinity)
+            .layoutPriority(2)
             .accessibilityElement(children: .combine)
             GuardedCanvas(drawing: $clock, startTime: stepStart, restarts: $restarts)
                 .frame(maxHeight: .infinity).layoutPriority(1)
@@ -211,7 +215,9 @@ struct SessionFlow: View {
                 ReferenceClock().frame(width: 96, height: 96)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(T("照着这个钟画一个", "Copy this clock")).font(.title2.bold())
+                        .fixedSize(horizontal: false, vertical: true)
                     Text(T("最后一步", "Last step")).font(.callout).foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer()
             }
@@ -294,7 +300,7 @@ struct SessionFlow: View {
         result.status = status; result.reasons = reasons; result.confidenceNotes = notes
         store.add(result)
         store.data.pendingExtraCheck = false
-        link.send(.init(kind: .session, session: result))
+        link.send(.init(kind: .session, session: result, name: store.data.linkedCode))
         Notifier.scheduleReminder(at: store.nextDueDate)
         if status == .urgent { Notifier.post(title: RiskStatus.urgent.title, body: RiskEngine.message(for: .urgent), critical: true) }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { go(.done) }
@@ -309,7 +315,11 @@ struct BigTitle: View {
     var body: some View {
         VStack(spacing: 6) {
             Text(title).font(.system(size: 34, weight: .bold)).multilineTextAlignment(.center)
-            if !subtitle.isEmpty { Text(subtitle).font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center) }
+                .fixedSize(horizontal: false, vertical: true)
+            if !subtitle.isEmpty {
+                Text(subtitle).font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
         .accessibilityElement(children: .combine)
     }

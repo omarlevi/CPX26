@@ -15,7 +15,38 @@ final class AppStore: ObservableObject {
         var hasSeenTutorial = false
         var carerSetupDone = false
         var carerTourDone = false
+        /// Carer can follow several family members; the active one lives in profile/sessions/pairingCode.
+        var people: [PersonRecord] = []
+        var activePerson = 0
+        /// Taker: the carer's pairing code this device linked with.
+        var linkedCode: String = ""
+
+        init() {}
+        init(from decoder: Decoder) throws {
+            let c = try decoder.container(keyedBy: CodingKeys.self)
+            role = try c.decodeIfPresent(Role.self, forKey: .role)
+            profile = (try? c.decodeIfPresent(Profile.self, forKey: .profile)) ?? Profile()
+            settings = (try? c.decodeIfPresent(Settings.self, forKey: .settings)) ?? Settings()
+            sessions = (try? c.decodeIfPresent([SessionResult].self, forKey: .sessions)) ?? []
+            pairingCode = (try? c.decodeIfPresent(String.self, forKey: .pairingCode)) ?? AppStore.newCode()
+            pendingExtraCheck = (try? c.decodeIfPresent(Bool.self, forKey: .pendingExtraCheck)) ?? false
+            hasSeenTutorial = (try? c.decodeIfPresent(Bool.self, forKey: .hasSeenTutorial)) ?? false
+            carerSetupDone = (try? c.decodeIfPresent(Bool.self, forKey: .carerSetupDone)) ?? false
+            carerTourDone = (try? c.decodeIfPresent(Bool.self, forKey: .carerTourDone)) ?? false
+            people = (try? c.decodeIfPresent([PersonRecord].self, forKey: .people)) ?? []
+            activePerson = (try? c.decodeIfPresent(Int.self, forKey: .activePerson)) ?? 0
+            linkedCode = (try? c.decodeIfPresent(String.self, forKey: .linkedCode)) ?? ""
+        }
     }
+
+    struct PersonRecord: Codable, Identifiable {
+        var id = UUID()
+        var profile = Profile()
+        var sessions: [SessionResult] = []
+        var pairingCode = AppStore.newCode()
+    }
+
+    static let maxPeople = 5
 
     @Published var data: Persisted { didSet { save() } }
     @Published var latestAlert: SessionResult?
@@ -84,6 +115,78 @@ final class AppStore: ObservableObject {
     }
 
     var wordListIndex: Int { realSessions.count % WordList.lists.count }
+
+    // MARK: multiple family members (carer)
+
+    func displayName(_ p: Profile) -> String { p.name.isEmpty ? Relation.label(p.relation) : p.name }
+
+    /// Copies the active person's live fields back into the people list.
+    private func syncActive() {
+        if data.people.isEmpty {
+            data.people = [PersonRecord(profile: data.profile, sessions: data.sessions, pairingCode: data.pairingCode)]
+            data.activePerson = 0
+            return
+        }
+        let i = min(data.activePerson, data.people.count - 1)
+        data.people[i].profile = data.profile
+        data.people[i].sessions = data.sessions
+        data.people[i].pairingCode = data.pairingCode
+    }
+
+    var peopleList: [PersonRecord] { syncedPeople() }
+
+    private func syncedPeople() -> [PersonRecord] {
+        var list = data.people
+        if list.isEmpty { return [PersonRecord(profile: data.profile, sessions: data.sessions, pairingCode: data.pairingCode)] }
+        let i = min(data.activePerson, list.count - 1)
+        list[i].profile = data.profile; list[i].sessions = data.sessions; list[i].pairingCode = data.pairingCode
+        return list
+    }
+
+    func switchTo(_ index: Int) {
+        syncActive()
+        guard data.people.indices.contains(index), index != data.activePerson else { return }
+        var d = data
+        d.activePerson = index
+        d.profile = d.people[index].profile
+        d.sessions = d.people[index].sessions
+        d.pairingCode = d.people[index].pairingCode
+        data = d
+        latestAlert = nil
+    }
+
+    func addPerson() {
+        syncActive()
+        guard data.people.count < AppStore.maxPeople else { return }
+        var p = Profile(); p.relation = "dad"; p.name = Relation.label("dad")
+        data.people.append(PersonRecord(profile: p))
+        switchTo(data.people.count - 1)
+        data.carerSetupDone = false      // show the profile form for the new person
+    }
+
+    func removeActivePerson() {
+        syncActive()
+        guard data.people.count > 1 else { return }
+        data.people.remove(at: data.activePerson)
+        let next = max(0, data.activePerson - 1)
+        var d = data
+        d.activePerson = next; d.profile = d.people[next].profile; d.sessions = d.people[next].sessions; d.pairingCode = d.people[next].pairingCode
+        data = d; latestAlert = nil
+    }
+
+    /// Routes a check that arrived from a linked phone to the right family member.
+    func receive(_ s: SessionResult, fromCode code: String?) {
+        if let code, code != data.pairingCode, let i = data.people.firstIndex(where: { $0.pairingCode == code }), i != data.activePerson {
+            if let j = data.people[i].sessions.firstIndex(where: { $0.id == s.id }) { data.people[i].sessions[j] = s } else { data.people[i].sessions.append(s) }
+        } else {
+            add(s)
+        }
+    }
+
+    func name(forCode code: String?) -> String {
+        if let code, let p = syncedPeople().first(where: { $0.pairingCode == code }) { return displayName(p.profile) }
+        return displayName(data.profile)
+    }
 
     // MARK: mutations
 
