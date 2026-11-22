@@ -215,8 +215,9 @@ struct SessionFlow: View {
     private var copyStep: some View {
         VStack(spacing: 12) {
             BigTitle(T("照着这个钟画一个", "Copy this clock"), T("最后一步", "Last step"))
-            HStack(alignment: .top, spacing: 16) {
-                ReferenceClock().frame(maxWidth: 220)
+            // phone-first: small reference on top, full-width canvas below
+            VStack(spacing: 10) {
+                ReferenceClock().frame(width: 130, height: 130)
                 GuardedCanvas(drawing: $copyDrawing, startTime: stepStart, restarts: .constant(0))
             }
             BigButton(T("画好了", "Done"), enabled: !copyDrawing.isEmpty) {
