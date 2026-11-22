@@ -13,23 +13,11 @@ struct CarerSettings: View {
             Form {
                 Section(T("配对", "Pairing")) {
                     LabeledContent(T("配对码", "Pairing code"), value: store.data.pairingCode).font(.title3.monospacedDigit())
-                    Text(T("在长辈的设备上选择“我来做检查”→“连接家人”，输入此号码。",
-                           "On their device choose \"I'm doing the check\" → \"Link family\" and enter this code.")).font(.caption)
+                    Text(T("在长辈的手机上选择“我来做检查”→“连接家人”，输入此号码。",
+                           "On their phone choose \"I'm taking the check\" → \"Link family\" and enter this code.")).font(.caption)
                     LabeledContent(T("已连接", "Linked devices"), value: link.connectedPeers.isEmpty ? "—" : link.connectedPeers.joined(separator: ", "))
                 }
-                Section(T("长辈资料（用于调整准确度）", "Their profile (used to adjust accuracy)")) {
-                    TextField(T("称呼", "Name"), text: $store.data.profile.name)
-                    Stepper(T("年龄 ", "Age ") + "\(store.data.profile.age)", value: $store.data.profile.age, in: 40...110)
-                    Picker(T("性别", "Sex"), selection: $store.data.profile.sex) { Text(T("女", "Female")).tag("F"); Text(T("男", "Male")).tag("M") }
-                    Stepper(T("受教育年限 ", "Years of schooling ") + "\(store.data.profile.educationYears)", value: $store.data.profile.educationYears, in: 0...25)
-                    Picker(T("惯用手", "Handedness"), selection: $store.data.profile.handedness) { Text(T("右", "Right")).tag("R"); Text(T("左", "Left")).tag("L") }
-                    Picker(T("视力", "Eyesight"), selection: $store.data.profile.vision) {
-                        Text(T("正常", "Normal")).tag("normal"); Text(T("戴眼镜", "Glasses")).tag("glasses"); Text(T("视力差", "Impaired")).tag("impaired")
-                    }
-                    Toggle(T("手抖", "Hand tremor"), isOn: $store.data.profile.tremor)
-                    Toggle(T("能轻松认读数字", "Reads numbers comfortably"), isOn: $store.data.profile.readsNumbers)
-                    Toggle(T("家族中有人患痴呆", "Family history of dementia"), isOn: $store.data.profile.familyHistory)
-                }
+                ProfileFields(profile: $store.data.profile)
                 Section(T("提醒", "Reminders")) {
                     DatePicker(T("提醒时间", "Reminder time"), selection: $reminder, displayedComponents: .hourAndMinute)
                     Picker(T("频率", "How often"), selection: $store.data.settings.cadenceDays) {
@@ -51,10 +39,11 @@ struct CarerSettings: View {
                 Section(T("语言与身份", "Language & role")) {
                     LanguageToggle()
                     Button(T("切换为“做检查”身份（单设备演示）", "Switch to the check-taker role (single-device demo)")) { store.data.role = .taker; dismiss() }
+                    Button(T("重新查看使用介绍", "Show the intro again")) { store.data.carerTourDone = false; dismiss() }
                     Button(T("清除所有数据", "Erase all data"), role: .destructive) { store.resetAll(); dismiss() }
                 }
                 Section {
-                    Text(T("时针是筛查与监测辅助工具，不是医疗器械，也不能诊断疾病。所有分析在本机完成。",
+                    Text(T("Shizhen 是筛查与监测辅助工具，不是医疗器械，也不能诊断疾病。所有分析在本机完成。",
                            "Shizhen is a screening and monitoring aid, not a medical device, and cannot diagnose. All analysis runs on this device."))
                         .font(.caption).foregroundStyle(.secondary)
                 }

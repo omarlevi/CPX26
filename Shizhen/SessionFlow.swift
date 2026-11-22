@@ -18,8 +18,7 @@ struct SessionFlow: View {
     @State private var stepStart = Date()
     @State private var restarts = 0
     @State private var interrupted = false
-    @State private var chosen: Set<String> = []
-    @StateObject private var listener = Listener()
+    @State private var typed = ["", "", ""]
 
     private var needsCopy: Bool {
         store.realSessions.filter { !$0.isDemo }.count < 3 || result.metrics.clockPoints == 0
@@ -45,7 +44,7 @@ struct SessionFlow: View {
             .frame(maxWidth: 720)
             .transition(.opacity)
         }
-        .padding(24)
+        .padding(.horizontal, 16).padding(.vertical, 12)
         .background(Color(.systemBackground))
         .onAppear(perform: begin)
         .onChange(of: scenePhase) { _, phase in
@@ -142,12 +141,13 @@ struct SessionFlow: View {
     }
 
     private var wordsStep: some View {
-        VStack(spacing: 24) {
-            BigTitle(T("请记住这三个词", "Please remember these three words"), T("稍后我会请您说出来", "I'll ask you for them later"))
-            HStack(spacing: 16) {
+        VStack(spacing: 20) {
+            BigTitle(T("请记住这三个词", "Please remember these three words"), T("稍后我会请您写出来", "I'll ask you for them later"))
+            VStack(spacing: 12) {
                 ForEach(words.indices, id: \.self) { i in
                     Text(AppStore.currentLanguage == .zh ? words[i].zh : words[i].en)
-                        .font(.system(size: 40, weight: .bold)).padding(.vertical, 28).frame(maxWidth: .infinity)
+                        .font(.system(size: 36, weight: .bold)).minimumScaleFactor(0.6).lineLimit(1)
+                        .padding(.vertical, 18).frame(maxWidth: .infinity)
                         .background(Color.accentColor.opacity(0.12), in: RoundedRectangle(cornerRadius: 18))
                 }
             }
@@ -157,74 +157,72 @@ struct SessionFlow: View {
     }
 
     private var clockStep: some View {
-        VStack(spacing: 12) {
-            BigTitle(T("请画一个钟", "Draw a clock"),
-                     T("写上所有数字，把指针指向十一点十分", "Put in all the numbers and set the hands to ten past eleven"))
+        VStack(spacing: 10) {
+            VStack(spacing: 2) {
+                Text(T("请画一个钟", "Draw a clock")).font(.title2.bold())
+                Text(T("写上所有数字，把指针指向十一点十分（11:10）", "Put in all the numbers and set the hands to ten past eleven (11:10)"))
+                    .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            }
+            .accessibilityElement(children: .combine)
             GuardedCanvas(drawing: $clock, startTime: stepStart, restarts: $restarts)
-            HStack {
-                Button(T("清除重画", "Clear")) { clock = Drawing() }.font(.title3).buttonStyle(.bordered)
-                BigButton(T("画好了", "Done"), enabled: !clock.isEmpty) {
+                .frame(maxHeight: .infinity).layoutPriority(1)
+            HStack(spacing: 10) {
+                Button(T("清除", "Clear")) { clock = Drawing() }.font(.title3).buttonStyle(.bordered).controlSize(.large)
+                Button {
                     result.command = clock
                     result.metrics = ClockAnalyzer.analyze(clock, restarts: restarts, interrupted: interrupted)
-                    listener.prepare()
                     go(.recall)
-                }
+                } label: { Text(T("画好了", "Done")).font(.title3.bold()).frame(maxWidth: .infinity) }
+                    .buttonStyle(.borderedProminent).controlSize(.large).disabled(clock.isEmpty)
             }
         }
     }
 
     private var recallStep: some View {
         let targets = words.map { AppStore.currentLanguage == .zh ? $0.zh : $0.en }
-        let distractors = WordList.lists.enumerated().filter { $0.offset != store.wordListIndex }
-            .flatMap { $0.element }.prefix(6).map { AppStore.currentLanguage == .zh ? $0.zh : $0.en }
-        let tiles = (targets + distractors).sorted()
         return VStack(spacing: 16) {
-            BigTitle(T("刚才的三个词是什么？", "What were the three words?"), T("可以说出来，也可以点选", "Say them, or tap them"))
-            if listener.available {
-                Button {
-                    listener.isListening ? listener.stop() : listener.start()
-                } label: {
-                    Label(listener.isListening ? T("停止", "Stop") : T("按下说话", "Tap to speak"),
-                          systemImage: listener.isListening ? "stop.circle.fill" : "mic.circle.fill")
-                        .font(.title2.bold()).frame(maxWidth: .infinity).padding()
-                }
-                .buttonStyle(.borderedProminent).tint(listener.isListening ? .red : .accentColor)
-                if !listener.transcript.isEmpty { Text("“\(listener.transcript)”").font(.title3) }
-            }
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: 12)], spacing: 12) {
-                ForEach(tiles, id: \.self) { w in
-                    let on = chosen.contains(w) || heard(w)
-                    Button { if chosen.contains(w) { chosen.remove(w) } else if chosen.count < 3 { chosen.insert(w) } } label: {
-                        Text(w).font(.title2.bold()).frame(maxWidth: .infinity).padding(.vertical, 18)
-                            .background(on ? Color.accentColor : Color.secondary.opacity(0.12), in: RoundedRectangle(cornerRadius: 14))
-                            .foregroundStyle(on ? .white : .primary)
-                    }
-                    .accessibilityAddTraits(on ? .isSelected : [])
-                }
+            BigTitle(T("刚才的三个词是什么？", "What were the three words?"), T("每个框写一个词，顺序不限", "One word per box, any order"))
+            ForEach(0..<3, id: \.self) { i in
+                TextField(T("第 \(i + 1) 个词", "Word \(i + 1)"), text: $typed[i])
+                    .font(.title2).textInputAutocapitalization(.never).autocorrectionDisabled()
+                    .padding(14).background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 14))
+                    .submitLabel(i < 2 ? .next : .done)
             }
             Spacer()
             BigButton(T("完成", "Done")) {
-                listener.stop()
-                let got = targets.filter { chosen.contains($0) || heard($0) }
-                result.recalled = got; result.recallScore = got.count
+                let got = targets.filter { t in typed.contains { matches($0, t) } }
+                result.recalled = typed.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+                result.recallScore = got.count
                 if needsCopy { go(.copy) } else { finish() }
             }
         }
     }
 
+    private func matches(_ typed: String, _ target: String) -> Bool {
+        let a = typed.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let b = target.lowercased()
+        guard !a.isEmpty else { return false }
+        return a == b || a.contains(b) || (a.count >= 4 && b.hasPrefix(String(a.prefix(4))))
+    }
+
     private var copyStep: some View {
-        VStack(spacing: 12) {
-            BigTitle(T("照着这个钟画一个", "Copy this clock"), T("最后一步", "Last step"))
-            // phone-first: small reference on top, full-width canvas below
-            VStack(spacing: 10) {
-                ReferenceClock().frame(width: 130, height: 130)
-                GuardedCanvas(drawing: $copyDrawing, startTime: stepStart, restarts: .constant(0))
+        VStack(spacing: 10) {
+            HStack(spacing: 14) {
+                ReferenceClock().frame(width: 96, height: 96)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(T("照着这个钟画一个", "Copy this clock")).font(.title2.bold())
+                    Text(T("最后一步", "Last step")).font(.callout).foregroundStyle(.secondary)
+                }
+                Spacer()
             }
-            BigButton(T("画好了", "Done"), enabled: !copyDrawing.isEmpty) {
+            GuardedCanvas(drawing: $copyDrawing, startTime: stepStart, restarts: .constant(0))
+                .frame(maxHeight: .infinity).layoutPriority(1)
+            Button {
                 result.copy = copyDrawing
                 result.copyMetrics = ClockAnalyzer.analyze(copyDrawing, restarts: 0, interrupted: interrupted)
                 finish()
-            }
+            } label: { Text(T("画好了", "Done")).font(.title3.bold()).frame(maxWidth: .infinity) }
+                .buttonStyle(.borderedProminent).controlSize(.large).disabled(copyDrawing.isEmpty)
         }
     }
 
@@ -271,16 +269,12 @@ struct SessionFlow: View {
         case .words:
             let zh = words.map { $0.zh }.joined(separator: "，"), en = words.map { $0.en }.joined(separator: ", ")
             v.say("请记住这三个词：\(zh)。", "Please remember these three words: \(en).")
-        case .clock: v.say("请画一个钟，写上所有数字，把指针指向十一点十分。", "Please draw a clock. Put in all the numbers, and set the hands to ten past eleven.")
-        case .recall: v.say("刚才的三个词是什么？", "What were the three words I asked you to remember?")
+        case .clock: v.say("请画一个钟，写上所有数字，把指针指向十一点十分。", "Please draw a clock. Put in all the numbers, and set the hands to ten past eleven, eleven ten.")
+        case .recall: v.say("刚才的三个词是什么？请写下来。", "What were the three words I asked you to remember? Please type them.")
         case .copy: v.say("最后一步，请照着这个钟画一个。", "Last step. Please copy this clock.")
         case .analyzing: break
         case .done: v.say("谢谢您，做得很好！", "Thank you, well done!")
         }
-    }
-
-    private func heard(_ w: String) -> Bool {
-        !listener.transcript.isEmpty && listener.transcript.lowercased().contains(w.lowercased())
     }
 
     private func scoreWarmup() {

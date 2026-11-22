@@ -25,7 +25,7 @@ enum ClockAnalyzer {
     /// Mini-Cog clock component (2 normal / 0 abnormal) combining rules and the Core ML scorer.
     static func miniCogClockPoints(_ m: ClockMetrics) -> Int {
         let modelOK = m.mlImpairedProb < 0 ? true : m.mlImpairedProb < 0.6   // Youden-optimal threshold on held-out test set (0.59)
-        let numbersOK = m.numbersFound >= 9 && m.meanAngleErrorDeg < 30
+        let numbersOK = m.numbersFound >= 10 && m.meanAngleErrorDeg < 20
         let modelSaysNormal = m.mlNormalProb >= 0.6 || m.mlClass == "minor_errors"
         if m.handsCorrect && modelOK && (numbersOK || modelSaysNormal) && !m.neglectFlag { return 2 }
         return 0
@@ -105,60 +105,114 @@ enum ClockAnalyzer {
 
     static func geometry(_ d: Drawing, into m: inout ClockMetrics) {
         let f = face(d)
+        let outlineIndex = d.strokes.indices.max(by: { d.strokes[$0].length < d.strokes[$1].length })
         // hands: straight-ish strokes with one end near the centre
         var handAngles: [Double] = []
-        let outline = d.strokes.max(by: { $0.length < $1.length })
-        for st in d.strokes where st != outline && st.points.count >= 2 {
+        var handIdx = Set<Int>()
+        for (i, st) in d.strokes.enumerated() where i != outlineIndex && st.points.count >= 2 {
             guard let a = st.points.first, let b = st.points.last else { continue }
             let chord = hypot(b.x - a.x, b.y - a.y)
             guard chord > f.r * 0.25, st.length > 0, chord / st.length > 0.75 else { continue }
             let da = hypot(a.x - f.cx, a.y - f.cy), db = hypot(b.x - f.cx, b.y - f.cy)
-            let (near, far) = da < db ? (a, b) : (b, a)
             guard min(da, db) < f.r * 0.35 else { continue }
-            _ = near
+            let far = da < db ? b : a
             handAngles.append(clockAngle(far.x, far.y, f))
+            handIdx.insert(i)
         }
         m.handCount = handAngles.count
         let minuteOK = handAngles.contains { angDiff($0, 60) < 25 }       // pointing at 2
         let hourOK = handAngles.contains { angDiff($0, 335) < 30 }        // just before 11
         m.handsCorrect = minuteOK && hourOK
 
-        // numbers via Vision text recognition on the rendered drawing
-        let found = recognizeNumbers(d)
-        var errors: [Double] = []
-        var left = 0, right = 0
-        var seen = Set<Int>()
-        for (n, pt) in found where !seen.contains(n) {
-            seen.insert(n)
-            errors.append(angDiff(clockAngle(pt.x, pt.y, f), Double(n % 12) * 30))
-            if pt.x < f.cx { left += 1 } else { right += 1 }
+        // numbers: cluster the remaining strokes (one cluster per written number), then read each cluster
+        var candidates: [Stroke] = []
+        for (i, st) in d.strokes.enumerated() where i != outlineIndex && !handIdx.contains(i) {
+            let cx = st.points.map { $0.x }.reduce(0, +) / Double(max(1, st.points.count))
+            let cy = st.points.map { $0.y }.reduce(0, +) / Double(max(1, st.points.count))
+            if hypot(cx - f.cx, cy - f.cy) > f.r * 0.3 { candidates.append(st) }   // ignore centre dot / arrowheads
         }
-        m.numbersFound = seen.count
-        m.meanAngleErrorDeg = errors.isEmpty ? 180 : errors.reduce(0, +) / Double(errors.count)
-        m.sequenceCorrect = m.numbersFound >= 9 && m.meanAngleErrorDeg < 30
+        let marks = cluster(candidates, gap: f.r * 0.09)
+        var errors: [Double] = []
+        var labelled: [(angle: Double, n: Int)] = []
+        var left = 0, right = 0
+        for mk in marks.prefix(16) {
+            let a = clockAngle(mk.cx, mk.cy, f)
+            if mk.cx < f.cx - f.r * 0.05 { left += 1 } else if mk.cx > f.cx + f.r * 0.05 { right += 1 }
+            if let n = readNumber(mk.strokes) {
+                labelled.append((a, n))
+                errors.append(angDiff(a, Double(n % 12) * 30))
+            } else {
+                // unread mark: how far is it from the nearest hour position?
+                errors.append(angDiff(a, (a / 30).rounded() * 30))
+            }
+        }
+        m.numbersFound = min(12, marks.count)
+        m.numbersRead = labelled.count
+        m.meanAngleErrorDeg = errors.isEmpty ? 0 : errors.reduce(0, +) / Double(errors.count)
+        // sequence: read numbers should increase clockwise from 12
+        let ordered = labelled.sorted { $0.angle < $1.angle }.map { $0.n % 12 }
+        let inOrder = zip(ordered, ordered.dropFirst()).filter { $0.0 < $0.1 }.count
+        let orderOK = ordered.count < 3 || Double(inOrder) / Double(ordered.count - 1) >= 0.8
+        m.sequenceCorrect = m.numbersFound >= 10 && m.meanAngleErrorDeg < 20 && orderOK
         let total = max(1, left + right)
         m.leftRightBalance = Double(left) / Double(total)
-        m.neglectFlag = seen.count >= 6 && (m.leftRightBalance < 0.2 || m.leftRightBalance > 0.8)
+        m.neglectFlag = marks.count >= 6 && (m.leftRightBalance < 0.2 || m.leftRightBalance > 0.8)
     }
 
-    /// Returns recognised clock numbers (1-12) with their centre in drawing coordinates.
-    static func recognizeNumbers(_ d: Drawing) -> [(Int, CGPoint)] {
-        guard let img = render(d, size: CGSize(width: d.width, height: d.height), lineWidth: 5).cgImage else { return [] }
+    struct Mark { var strokes: [Stroke]; var minX, minY, maxX, maxY: Double
+        var cx: Double { (minX + maxX) / 2 }; var cy: Double { (minY + maxY) / 2 } }
+
+    /// Groups strokes whose bounding boxes are within `gap` of each other (e.g. the "1" and "2" of 12).
+    static func cluster(_ strokes: [Stroke], gap: Double) -> [Mark] {
+        var marks: [Mark] = []
+        for st in strokes {
+            let xs = st.points.map { $0.x }, ys = st.points.map { $0.y }
+            guard let x0 = xs.min(), let x1 = xs.max(), let y0 = ys.min(), let y1 = ys.max() else { continue }
+            var m = Mark(strokes: [st], minX: x0, minY: y0, maxX: x1, maxY: y1)
+            var merged = true
+            while merged {
+                merged = false
+                if let j = marks.firstIndex(where: { o in
+                    !(m.maxX + gap < o.minX || o.maxX + gap < m.minX || m.maxY + gap < o.minY || o.maxY + gap < m.minY) }) {
+                    let o = marks.remove(at: j)
+                    m = Mark(strokes: o.strokes + m.strokes, minX: min(o.minX, m.minX), minY: min(o.minY, m.minY),
+                             maxX: max(o.maxX, m.maxX), maxY: max(o.maxY, m.maxY))
+                    merged = true
+                }
+            }
+            marks.append(m)
+        }
+        return marks
+    }
+
+    /// Renders one cluster on its own and reads it with Vision (handles 1/l/I, 0/O look-alikes).
+    static func readNumber(_ strokes: [Stroke]) -> Int? {
+        let xs = strokes.flatMap { $0.points.map { $0.x } }, ys = strokes.flatMap { $0.points.map { $0.y } }
+        guard let x0 = xs.min(), let x1 = xs.max(), let y0 = ys.min(), let y1 = ys.max() else { return nil }
+        let side = max(x1 - x0, y1 - y0, 10) * 1.8
+        let ox = (x0 + x1) / 2 - side / 2, oy = (y0 + y1) / 2 - side / 2
+        let local = Drawing(strokes: strokes.map { Stroke(points: $0.points.map { StrokePoint(x: $0.x - ox, y: $0.y - oy, t: $0.t) }) },
+                            width: side, height: side)
+        // wide canvas so two-digit numbers read left-to-right
+        guard let img = render(local, size: CGSize(width: 160, height: 160), lineWidth: 6).cgImage else { return nil }
         let req = VNRecognizeTextRequest()
         req.recognitionLevel = .accurate
         req.usesLanguageCorrection = false
-        req.minimumTextHeight = 0.02
-        let handler = VNImageRequestHandler(cgImage: img, options: [:])
-        try? handler.perform([req])
-        var out: [(Int, CGPoint)] = []
+        req.recognitionLanguages = ["en-US"]
+        req.minimumTextHeight = 0.1
+        try? VNImageRequestHandler(cgImage: img, options: [:]).perform([req])
+        let fix: [Character: Character] = ["l": "1", "I": "1", "|": "1", "i": "1", "!": "1", "O": "0", "o": "0", "D": "0",
+                                           "S": "5", "s": "5", "Z": "2", "z": "2", "B": "8", "g": "9", "q": "9", "G": "6", "b": "6", "T": "7"]
         for obs in req.results ?? [] {
-            guard let cand = obs.topCandidates(1).first else { continue }
-            let digits = cand.string.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
-            let bb = obs.boundingBox
-            let center = CGPoint(x: bb.midX * d.width, y: (1 - bb.midY) * d.height)
-            for n in digits where (1...12).contains(n) { out.append((n, center)) }
+            for cand in obs.topCandidates(3) {
+                let cleaned = String(cand.string.compactMap { c -> Character? in
+                    if c.isNumber { return c }
+                    return fix[c]
+                })
+                if let n = Int(cleaned), (1...12).contains(n) { return n }
+            }
         }
-        return out
+        return nil
     }
 
     // MARK: - Rendering

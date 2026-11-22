@@ -14,14 +14,33 @@ struct RootView: View {
     }
 }
 
+/// Globe menu with supported languages (others listed as coming soon).
 struct LanguageToggle: View {
     @EnvironmentObject var store: AppStore
+    static let comingSoon = ["Español", "Français", "العربية", "हिन्दी", "Português", "Русский", "日本語", "한국어", "Deutsch", "Bahasa Indonesia"]
     var body: some View {
-        Picker("", selection: Binding(get: { store.data.settings.language }, set: { store.setLanguage($0) })) {
-            Text("中文").tag(AppLanguage.zh); Text("EN").tag(AppLanguage.en)
+        Menu {
+            Picker("Language", selection: Binding(get: { store.data.settings.language }, set: { store.setLanguage($0) })) {
+                Text("English").tag(AppLanguage.en)
+                Text("简体中文").tag(AppLanguage.zh)
+            }
+            Section(T("即将支持", "Coming soon")) {
+                ForEach(Self.comingSoon, id: \.self) { Text($0) }
+            }
+            .disabled(true)
+        } label: {
+            Image(systemName: "globe").font(.title2).padding(8)
         }
-        .pickerStyle(.segmented).frame(width: 130)
-        .accessibilityLabel("Language")
+        .accessibilityLabel(T("语言", "Language"))
+    }
+}
+
+struct AppLogo: View {
+    var size: CGFloat = 96
+    var body: some View {
+        Image("Logo").resizable().scaledToFit().frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.22, style: .continuous))
+            .accessibilityHidden(true)
     }
 }
 
@@ -30,47 +49,40 @@ struct LanguageToggle: View {
 struct RolePicker: View {
     @EnvironmentObject var store: AppStore
     var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: 24) {
             HStack { Spacer(); LanguageToggle() }
             Spacer()
-            ReferenceClock().frame(width: 140)
-            Text("时针 Shizhen").font(.system(size: 44, weight: .bold))
+            AppLogo(size: 110)
+            Text("Shizhen").font(.system(size: 44, weight: .bold))
             Text(T("3 分钟脑力小检查，家人随时了解", "A 3-minute brain check your family can follow"))
                 .font(.title3).foregroundStyle(.secondary).multilineTextAlignment(.center)
             VStack(spacing: 14) {
-                RoleButton(icon: "figure.and.child.holdinghands", title: T("我来照顾家人", "I'm looking after someone"),
-                           subtitle: T("设置、查看结果、接收提醒", "Set up, see results, get alerts")) {
+                RoleButton(title: T("我在照顾家人", "I care for a family member")) {
                     store.data.role = .carer; Notifier.requestPermission()
                 }
-                RoleButton(icon: "hand.draw", title: T("我来做检查", "I'm doing the check"),
-                           subtitle: T("大字体，有语音引导", "Large text, spoken guidance")) {
+                RoleButton(title: T("我来做检查", "I'm taking the check")) {
                     store.data.role = .taker; Notifier.requestPermission()
                 }
             }
             Spacer()
-            Text(T("所有分析都在本机完成。这不是医学诊断。", "All analysis happens on this device. Not a medical diagnosis."))
-                .font(.footnote).foregroundStyle(.secondary)
+            VStack(spacing: 2) {
+                Text(T("所有分析都在本机完成。", "All analysis happens on this device."))
+                Text(T("这不是医学诊断。", "Not a medical diagnosis."))
+            }
+            .font(.footnote).foregroundStyle(.secondary)
         }
-        .padding(28)
+        .padding(24)
         .frame(maxWidth: 640)
     }
 }
 
 struct RoleButton: View {
-    var icon: String; var title: String; var subtitle: String; var action: () -> Void
+    var title: String; var action: () -> Void
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 16) {
-                Image(systemName: icon).font(.system(size: 34)).frame(width: 50)
-                VStack(alignment: .leading) {
-                    Text(title).font(.title2.bold())
-                    Text(subtitle).font(.callout).foregroundStyle(.secondary)
-                }
-                Spacer()
-            }
-            .padding(20)
-            .frame(maxWidth: .infinity)
-            .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
+            Text(title).font(.title2.bold()).minimumScaleFactor(0.7).lineLimit(1)
+                .frame(maxWidth: .infinity).padding(.vertical, 22)
+                .background(Color(.secondarySystemBackground), in: RoundedRectangle(cornerRadius: 18))
         }
         .buttonStyle(.plain)
     }

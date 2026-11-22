@@ -16,6 +16,10 @@ struct CarerDashboard: View {
                     if let alert = store.latestAlert { AlertBanner(session: alert) }
                     StatusCard()
                     actions
+                    if link.connectedPeers.isEmpty {
+                        Text(T("配对码 \(store.data.pairingCode)：在长辈的手机上输入", "Pairing code \(store.data.pairingCode): enter it on their phone"))
+                            .font(.footnote).foregroundStyle(.secondary)
+                    }
                     if store.realSessions.count >= 2 { TrendCard() }
                     AdherenceCard()
                     history
@@ -24,7 +28,7 @@ struct CarerDashboard: View {
                 .frame(maxWidth: 900)
                 .frame(maxWidth: .infinity)
             }
-            .navigationTitle(store.data.profile.name)
+            .navigationTitle(store.data.profile.name.isEmpty ? Relation.label(store.data.profile.relation) : store.data.profile.name)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Image(systemName: "clock.badge.checkmark").font(.title2).foregroundStyle(Color.accentColor)
@@ -38,6 +42,9 @@ struct CarerDashboard: View {
             }
             .sheet(isPresented: $showDemo) { DemoControls().environmentObject(store).environmentObject(link) }
             .sheet(isPresented: $showSettings) { CarerSettings().environmentObject(store).environmentObject(link) }
+            .fullScreenCover(isPresented: Binding(get: { !store.data.carerSetupDone || !store.data.carerTourDone }, set: { _ in })) {
+                CarerOnboarding().environmentObject(store).environmentObject(link)
+            }
             .navigationDestination(for: SessionResult.self) { SessionDetail(session: $0) }
         }
         .onAppear { link.startHosting(code: store.data.pairingCode) }
@@ -55,13 +62,6 @@ struct CarerDashboard: View {
                 .buttonStyle(.bordered).controlSize(.large)
         }
         .disabled(link.connectedPeers.isEmpty)
-        .overlay(alignment: .bottom) {
-            if link.connectedPeers.isEmpty {
-                Text(T("配对码 \(store.data.pairingCode)：在长辈的设备上输入", "Pairing code \(store.data.pairingCode): enter it on their device"))
-                    .font(.caption).foregroundStyle(.secondary).offset(y: 22)
-            }
-        }
-        .padding(.bottom, link.connectedPeers.isEmpty ? 22 : 0)
     }
 
     private var history: some View {
@@ -285,7 +285,9 @@ struct SessionDetail: View {
         return LazyVGrid(columns: [GridItem(.adaptive(minimum: 150))], spacing: 10) {
             Tile(T("钟面 AI", "Clock AI"), m.mlImpairedProb < 0 ? "—" : (m.mlClass == "impaired" ? T("受损", "Impaired") : m.mlClass == "normal" ? T("正常", "Normal") : T("轻微错误", "Minor errors")),
                  m.mlImpairedProb < 0 ? "" : String(format: T("受损概率 %.0f%%", "%.0f%% impaired"), m.mlImpairedProb * 100))
-            Tile(T("数字", "Numbers"), "\(m.numbersFound)/12", String(format: T("平均位置误差 %.0f°", "avg. placement error %.0f°"), min(m.meanAngleErrorDeg, 180)))
+            Tile(T("数字", "Numbers"), "\(m.numbersFound)/12",
+                 m.numbersFound == 0 ? T("未找到数字", "no numbers found")
+                 : String(format: T("识别 %d 个 · 平均偏差 %.0f°", "%d read · avg. offset %.0f°"), m.numbersRead, m.meanAngleErrorDeg))
             Tile(T("指针", "Hands"), m.handsCorrect ? "✓ 11:10" : "✗", "\(m.handCount) " + T("条", "found"))
             Tile(T("总时间", "Total time"), String(format: "%.0fs", m.totalTime), String(format: T("开始前 %.1fs", "%.1fs before first stroke"), m.latency))
             Tile(T("思考时间", "Think time"), String(format: "%.0fs", m.thinkTime), String(format: "%.0f%%", m.thinkRatio * 100))

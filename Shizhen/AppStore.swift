@@ -13,6 +13,8 @@ final class AppStore: ObservableObject {
         var pairingCode: String = AppStore.newCode()
         var pendingExtraCheck = false
         var hasSeenTutorial = false
+        var carerSetupDone = false
+        var carerTourDone = false
     }
 
     @Published var data: Persisted { didSet { save() } }

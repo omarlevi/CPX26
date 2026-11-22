@@ -45,6 +45,7 @@ struct Pause: Codable, Hashable {
 struct ClockMetrics: Codable, Hashable {
     // final-image features
     var numbersFound: Int = 0
+    var numbersRead: Int = 0
     var meanAngleErrorDeg: Double = 0
     var sequenceCorrect: Bool = false
     var handsCorrect: Bool = false
@@ -108,7 +109,8 @@ struct SessionResult: Codable, Identifiable, Hashable {
 }
 
 struct Profile: Codable, Hashable {
-    var name: String = "妈妈 Mom"
+    var relation: String = "mom"     // mom, dad, grandma, grandpa, spouse, other
+    var name: String = "Mom"
     var age: Int = 72
     var sex: String = "F"
     var educationYears: Int = 9
@@ -138,6 +140,20 @@ struct WordList {
         [("船长", "captain"), ("花园", "garden"), ("照片", "picture")],
         [("女儿", "daughter"), ("天堂", "heaven"), ("高山", "mountain")]
     ]
+}
+
+enum Relation {
+    static let all = ["mom", "dad", "grandma", "grandpa", "spouse", "other"]
+    static func label(_ r: String) -> String {
+        switch r {
+        case "mom": return T("妈妈", "Mom")
+        case "dad": return T("爸爸", "Dad")
+        case "grandma": return T("奶奶/外婆", "Grandma")
+        case "grandpa": return T("爷爷/外公", "Grandpa")
+        case "spouse": return T("配偶", "Spouse")
+        default: return T("其他家人", "Other relative")
+        }
+    }
 }
 
 // MARK: - Localisation helper
