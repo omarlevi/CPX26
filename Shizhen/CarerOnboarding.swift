@@ -19,22 +19,34 @@ struct ProfileFields: View {
             TextField(T("称呼（如：王阿姨）", "What you call them (e.g. Grandma Li)"), text: $profile.name)
         }
         Section(T("基本信息（用于提高准确度）", "Basics (used to improve accuracy)")) {
-            Picker(T("年龄", "Age"), selection: $profile.age) {
-                ForEach(40...110, id: \.self) { Text("\($0)").tag($0) }
+            HStack {
+                Text(T("年龄", "Age")).font(.headline)
+                Picker(T("年龄", "Age"), selection: $profile.age) {
+                    ForEach(40...110, id: \.self) { Text(T("\($0) 岁", "\($0) years old")).tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().frame(height: 110)
             }
-            .pickerStyle(.wheel).frame(height: 110)
-            Picker(T("受教育年限", "Years of schooling"), selection: $profile.educationYears) {
-                ForEach(0...25, id: \.self) { Text("\($0)").tag($0) }
+            HStack {
+                Text(T("受教育年限", "Years of schooling")).font(.headline)
+                Picker(T("受教育年限", "Years of schooling"), selection: $profile.educationYears) {
+                    ForEach(0...25, id: \.self) { Text(T("\($0) 年", "\($0) years")).tag($0) }
+                }
+                .pickerStyle(.wheel).labelsHidden().frame(height: 110)
             }
-            .pickerStyle(.wheel).frame(height: 110)
-            Picker(T("性别", "Sex"), selection: $profile.sex) {
-                Text(T("女", "Female")).tag("F"); Text(T("男", "Male")).tag("M")
+            VStack(alignment: .leading, spacing: 6) {
+                Text(T("性别", "Sex")).font(.headline)
+                Picker(T("性别", "Sex"), selection: $profile.sex) {
+                    Text(T("女", "Female")).tag("F"); Text(T("男", "Male")).tag("M")
+                }
+                .pickerStyle(.segmented).labelsHidden()
             }
-            .pickerStyle(.segmented)
-            Picker(T("惯用手", "Writing hand"), selection: $profile.handedness) {
-                Text(T("右手", "Right")).tag("R"); Text(T("左手", "Left")).tag("L")
+            VStack(alignment: .leading, spacing: 6) {
+                Text(T("写字用哪只手", "Which hand do they write with?")).font(.headline)
+                Picker(T("写字用哪只手", "Writing hand"), selection: $profile.handedness) {
+                    Text(T("右手", "Right hand")).tag("R"); Text(T("左手", "Left hand")).tag("L")
+                }
+                .pickerStyle(.segmented).labelsHidden()
             }
-            .pickerStyle(.segmented)
         }
         Section(T("可能影响结果的情况", "Things that can affect results")) {
             Picker(T("视力", "Eyesight"), selection: $profile.vision) {
@@ -83,8 +95,7 @@ struct CarerOnboarding: View {
                  body: T("绿色＝稳定，黄色＝留意，橙色＝建议就医，红色＝紧急。每次检查后自动更新并通知您。",
                          "Green = stable, yellow = watch, orange = see a doctor, red = urgent. Updates after every check, and you get a notification.")),
             Card(id: 2, icon: "chart.xyaxis.line", title: T("3. 趋势", "3. Trend"),
-                 body: T("前 3 次检查建立 \(who) 的个人基线，之后每次都和基线比较，而不是和别人比。",
-                         "The first 3 checks build \(who)'s personal baseline. Every later check is compared with it, not with other people.")),
+                 body: T("前 3 次检查建立 \(who) 的个人基线。", "The first 3 checks build \(who)'s personal baseline.")),
             Card(id: 3, icon: "play.circle", title: T("4. 回放", "4. Replay"),
                  body: T("点开任意一次检查，可以回放画钟过程，橙色圆点表示停顿思考的位置。",
                          "Open any check to replay the drawing. Orange dots show where they paused to think.")),
