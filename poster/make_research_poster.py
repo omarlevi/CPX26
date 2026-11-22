@@ -129,7 +129,7 @@ ax.set_xlim(-1.15, 1.15); ax.set_ylim(-1.15, 1.25); title(ax, "Process data: pau
 
 # ------------------------------------------------------------------ layout
 W, H = 4800, 3600; Pz = Image.new("RGB", (W, H), "#f5f7f8"); d = ImageDraw.Draw(Pz)
-def f(w, s): return ImageFont.truetype(FD + f"Inter-{w}.otf", s)
+def f(w, s_): return ImageFont.truetype(FD + f"Inter-{w}.otf", s_)
 def wrap(text, font, width):
     out, cur = [], ""
     for wd in text.split():
@@ -137,20 +137,26 @@ def wrap(text, font, width):
         if d.textlength(t_, font=font) <= width: cur = t_
         else: out.append(cur); cur = wd
     out.append(cur); return out
-def bullets(x, y, items, size=32, width=1300):
+def para(x, y, text, size=33, width=1400, fill=INK, w="Regular", gap=1.4):
+    fo = f(w, size)
+    for ln in wrap(text, fo, width): d.text((x, y), ln, font=fo, fill=fill); y += int(size * gap)
+    return y + 14
+def bullets(x, y, items, size=33, width=1400):
     for it in items:
-        fo = f("Medium", size); d.ellipse([x + 4, y + size * .42, x + 20, y + size * .42 + 16], fill=TEAL)
+        fo = f("Regular", size); d.ellipse([x + 4, y + size * .42, x + 20, y + size * .42 + 16], fill=TEAL)
         for ln in wrap(it, fo, width - 44): d.text((x + 40, y), ln, font=fo, fill=INK); y += int(size * 1.38)
         y += 14
     return y
+def caption(x, y, text, width):
+    return para(x, y, text, size=28, width=width, fill=GREY, w="Medium", gap=1.35)
 def panel(x, y, w, h, t):
     d.rounded_rectangle([x, y, x + w, y + h], 26, fill="white", outline="#d7dee3", width=3)
     d.rounded_rectangle([x, y, x + w, y + 80], 26, fill=TEAL); d.rectangle([x, y + 50, x + w, y + 80], fill=TEAL)
-    d.text((x + 36, y + 14), t.upper(), font=f("Bold", 44), fill="white"); return y + 110
+    d.text((x + 36, y + 14), t.upper(), font=f("Bold", 44), fill="white"); return y + 115
 def img(name, x, y, w):
     im = Image.open(f"{FIG}/{name}.png").convert("RGB"); h = int(im.height * w / im.width); Pz.paste(im.resize((w, h), Image.LANCZOS), (x, y)); return y + h
 
-# header with KPI tiles
+# header
 d.rectangle([0, 0, W, 420], fill=INK)
 logo = Image.open("Shizhen/Assets.xcassets/Logo.imageset/logo.png").resize((270, 270)); Pz.paste(logo, (80, 75))
 d.text((390, 80), "Shizhen", font=f("Bold", 130), fill="white")
@@ -161,45 +167,67 @@ for big, small in [(f"{ci['AUC'][0]:.2f}", "AUC"), (f"{r['sensitivity']*100:.0f}
     d.rounded_rectangle([kx, 85, kx + 520, 335], 24, fill="#1e3140")
     d.text((kx + 260, 160), big, font=f("Bold", 96), fill="white", anchor="mm"); d.text((kx + 260, 275), small, font=f("Medium", 36), fill=TEAL2, anchor="mm"); kx += 560
 
-g, top = 60, 470; c1w = 1400; c1x = g; rx = c1x + c1w + g; rw = W - rx - g
-# column 1
-y = panel(c1x, top, c1w, 1010, "Problem")
-y = img("problem", c1x + 30, y, c1w - 60) + 10
-y = bullets(c1x + 40, y, ["93% of dementia went undetected (KCL study, China)", "Clock test is validated, but needs trained raters, so it stays in clinics"])
-y = panel(c1x, 1520, c1w, 560, "Question & Hypothesis")
-d.text((c1x + 40, y), "Can a phone-sized model score free-drawn clocks", font=f("Medium", 34), fill=INK)
-d.text((c1x + 40, y + 50), "on-device, accurately enough for home use?", font=f("Medium", 34), fill=INK)
-d.rounded_rectangle([c1x + 40, y + 130, c1x + c1w - 40, y + 400], 20, fill="#e6f2f3")
-d.text((c1x + 80, y + 160), "H:", font=f("Bold", 60), fill=TEAL)
-d.text((c1x + 190, y + 168), "A compact CNN reaches", font=f("SemiBold", 40), fill=INK)
-d.text((c1x + 190, y + 225), "AUC ≥ 0.90 on unseen people", font=f("SemiBold", 40), fill=INK)
-d.text((c1x + 190, y + 300), "✓ Supported (AUC 0.96)", font=f("Bold", 40), fill=TEAL)
-y = panel(c1x, 2120, c1w, 1380, "Method")
-steps = [("Finger strokes", "PencilKit, timestamped"), ("Normalize", "crop · pad · 128×128"), ("Mini-VGG", "0.84M params, from scratch"),
-         ("Core ML", "1.7 MB · on-device"), ("Risk engine", "personal baseline"), ("Family alert", "status · trend · replay")]
-bx, by = c1x + 60, y + 10
-for i, (a, b) in enumerate(steps):
-    col = i % 2; row = i // 2; X = bx + col * 650; Y = by + row * 190
-    d.rounded_rectangle([X, Y, X + 600, Y + 140], 18, fill="#e6f2f3" if i not in (2, 3) else TEAL)
-    fc = "white" if i in (2, 3) else INK
-    d.text((X + 30, Y + 22), f"{i+1}. {a}", font=f("Bold", 38), fill=fc); d.text((X + 30, Y + 80), b, font=f("Regular", 30), fill=fc if i in (2, 3) else GREY)
-img("donut", c1x + 80, by + 3 * 190 + 10, 720)
-bullets(c1x + 830, by + 3 * 190 + 120, ["Split by participant 70/15/15", "Class-weighted loss", "No mirror-flip augmentation", "Same pipeline ready for NHATS"], size=30, width=540)
+g, top = 60, 470; cw = (W - 4 * g) // 3; cx = [g, 2 * g + cw, 3 * g + 2 * cw]; tw = cw - 80
 
-# results grid (3 x 3)
-y = panel(rx, top, rw, 2470, "Results")
-cw_ = (rw - 4 * 40) // 3; names = ["roc", "pr", "confusion", "dist", "sweep", "ci", "size", "train", "replay"]
-for k, n in enumerate(names):
-    col, row = k % 3, k // 3; X = rx + 40 + col * (cw_ + 40); Y = y + row * 780
-    img(n, X, Y, cw_)
-y = panel(rx, 3000, rw, 500, "Conclusions")
-half = (rw - 120) // 2
-bullets(rx + 40, y, [f"Hypothesis supported: AUC {ci['AUC'][0]:.2f} (95% CI {ci['AUC'][1]:.2f}–{ci['AUC'][2]:.2f}), 88% sensitivity, 94% specificity on unseen people",
-                     "70× fewer parameters than published models at similar accuracy: runs offline, works in China"], size=38, width=half)
-bullets(rx + 80 + half, y, ["Stroke replay makes every flag explainable to families and doctors",
-                            "Next: NHATS (50k+ clocks) + demographics model; cohort validation. Not a diagnosis"], size=38, width=half)
+# ---- column 1: Problem, How it works, Question
+y = panel(cx[0], top, cw, 1120, "Problem")
+y = img("problem", cx[0] + 40, y, cw - 80) + 10
+y = bullets(cx[0] + 40, y, [
+    "In China, 93% of dementia cases went undetected in a landmark study, and 60% of over-60s live without their children.",
+    "Doctors screen with the Clock Drawing Test, but a trained rater must score it, so it rarely leaves the clinic."], width=tw)
+y = panel(cx[0], 1630, cw, 1060, "How Shizhen works")
+for n_, (a, b) in enumerate([("Draw a clock at 11:10", "with a finger, voice-guided, about 3 minutes"),
+                             ("Remember 3 words", "plus day and year (orientation)"),
+                             ("AI scores it on the phone", "image + how it was drawn (pauses, tremor)"),
+                             ("Compare with their own baseline", "3 checks in week one, then every 14 days"),
+                             ("Family is alerted", "decline · sudden change · missed checks")], 1):
+    d.ellipse([cx[0] + 40, y, cx[0] + 110, y + 70], fill=TEAL); d.text((cx[0] + 75, y + 35), str(n_), font=f("Bold", 40), fill="white", anchor="mm")
+    d.text((cx[0] + 135, y - 2), a, font=f("SemiBold", 36), fill=INK); d.text((cx[0] + 135, y + 46), b, font=f("Regular", 29), fill=GREY)
+    y += 165
+y = panel(cx[0], 2730, cw, 770, "Question & Hypothesis")
+y = para(cx[0] + 40, y, "Can a phone-sized model score free-drawn clocks accurately enough for families to use at home?", size=34, width=tw, w="Medium")
+d.rounded_rectangle([cx[0] + 40, y + 10, cx[0] + cw - 40, y + 300], 20, fill="#e6f2f3")
+d.text((cx[0] + 80, y + 40), "H:", font=f("Bold", 60), fill=TEAL)
+para(cx[0] + 190, y + 48, "A compact model reaches AUC ≥ 0.90 on people it has never seen.", size=36, width=tw - 180, w="SemiBold")
+d.text((cx[0] + 190, y + 210), "✓ Supported: AUC 0.96", font=f("Bold", 40), fill=TEAL)
+
+# ---- column 2: Method, Process data (clock)
+y = panel(cx[1], top, cw, 1500, "Method")
+y = para(cx[1] + 40, y, "Trained on 3,108 clocks from older adults, each scored by a clinician (Chulalongkorn University dataset).", width=tw)
+img("donut", cx[1] + 40, y, 640)
+bullets(cx[1] + 720, y + 90, ["Split by person: tested only on people never seen in training",
+                              "Small CNN (mini-VGG, 0.84M parameters), as in Sato et al. 2022",
+                              "No mirror flips: a mirrored clock is a wrong clock"], size=30, width=cw - 760)
+y += 600
+steps = [("Finger strokes", "timestamped"), ("Normalize", "128×128"), ("Mini-VGG", "0.84M params"), ("Core ML", "1.7 MB, offline"), ("Risk engine", "own baseline"), ("Family alert", "status · replay")]
+for i, (a, b) in enumerate(steps):
+    col, row = i % 3, i // 3; bw = (cw - 80 - 2 * 30) // 3; X = cx[1] + 40 + col * (bw + 30); Y = y + row * 175
+    dark = i in (2, 3); d.rounded_rectangle([X, Y, X + bw, Y + 140], 18, fill=TEAL if dark else "#e6f2f3")
+    d.text((X + 24, Y + 22), a, font=f("Bold", 34), fill="white" if dark else INK); d.text((X + 24, Y + 80), b, font=f("Regular", 28), fill="white" if dark else GREY)
+para(cx[1] + 40, y + 380, "Everything runs on the iPhone: no cloud, private, and it works in China, where Apple Intelligence is unavailable.", size=31, width=tw, fill=GREY)
+y = panel(cx[1], 2010, cw, 1490, "More than a picture")
+y = para(cx[1] + 40, y, "Paper tests only see the finished clock. We also record how it was drawn: when, where, and how long someone paused.", width=tw)
+img("replay", cx[1] + 230, y, 1050)
+caption(cx[1] + 40, y + 930, "Stroke replay (illustrative): orange circles mark pauses over 2 s, sized by length. Families and doctors can see exactly why a check was flagged.", tw)
+
+# ---- column 3: Results (4 charts with captions) + Conclusions
+y = panel(cx[2], top, cw, 2200, "Results (465 drawings from unseen people)")
+hw = (cw - 120) // 2
+for k, (name, cap) in enumerate([
+        ("roc", "Separates impaired from healthy clocks: AUC 0.96 (95% CI 0.93–0.98)."),
+        ("confusion", "93% of impaired clocks caught. Most errors over-flag minor mistakes, the safer direction."),
+        ("dist", "Impaired and healthy clocks get clearly different scores."),
+        ("size", "70× smaller than published models with similar accuracy, small enough for any phone.")]):
+    col, row = k % 2, k // 2; X = cx[2] + 40 + col * (hw + 40); Y = y + row * 1030
+    yy = img(name, X, Y, hw); caption(X, yy + 8, cap, hw)
+y = panel(cx[2], 2710, cw, 790, "Conclusions")
+bullets(cx[2] + 40, y, [
+    "Hypothesis supported: AUC 0.96, sensitivity 88%, specificity 94% on unseen people.",
+    "A clinic-grade screen can run privately on a phone, so families can check at home.",
+    "Next: NHATS data (50k+ clocks), validation with older adults. A screening aid, not a diagnosis."], size=34, width=tw)
+
 d.rectangle([0, H - 60, W, H], fill=INK)
 d.text((g, H - 47), "Data: Chulalongkorn CDT (Raksasat et al., Sci. Rep. 2023) · Method: Sato et al., Front. Neurol. 2022 (NHATS) · Stats: KCL/Lancet; PLOS One 2025; Caixin 2026 · CrossPointX 2026 Track 1 · github.com/omarlevi/CPX26 · Built with Claude Code",
        font=f("Regular", 26), fill="#c9d3d9")
 Pz.save("poster/shizhen-research-poster.png", optimize=True); Pz.save("poster/shizhen-research-poster.pdf", resolution=100)
-Pz.resize((W // 4, H // 4)).save("/tmp/claude-0/-home-user-CPX26/c179a320-028e-58b6-8c25-278b6d454e8d/scratchpad/rp.png"); print("ok", ci)
+Pz.resize((W // 4, H // 4)).save("/tmp/claude-0/-home-user-CPX26/c179a320-028e-58b6-8c25-278b6d454e8d/scratchpad/rp.png"); print("ok")
